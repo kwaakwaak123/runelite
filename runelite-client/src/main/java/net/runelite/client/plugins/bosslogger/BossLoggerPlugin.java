@@ -224,6 +224,7 @@ public class BossLoggerPlugin extends Plugin
 				case ItemID.ABYSSAL_WHIP:
 				case ItemID.ABYSSAL_ORPHAN:
 				case ItemID.ABYSSAL_HEAD:
+				case ItemID.JAR_OF_MIASMA:
 					break;
 				default:
 					return;
