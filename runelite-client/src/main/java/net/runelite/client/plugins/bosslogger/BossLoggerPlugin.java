@@ -55,7 +55,7 @@ import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.game.ItemManager;
-import net.runelite.client.game.loot.LootTypes;
+import net.runelite.client.game.loot.LootEventType;
 import net.runelite.client.game.loot.data.ItemStack;
 import net.runelite.client.game.loot.events.EventLootReceived;
 import net.runelite.client.game.loot.events.NpcLootReceived;
@@ -142,25 +142,22 @@ public class BossLoggerPlugin extends Plugin
 	protected void onEventLootReceived(EventLootReceived e)
 	{
 		int kc = -1;
+		String eventName = e.getEvent().name().replaceAll("_", " ");
 		switch (e.getEvent())
 		{
-			case(LootTypes.BARROWS):
-				kc = killcountMap.get("BARROWS");
-				break;
-			case(LootTypes.CHAMBERS_OF_XERIC):
-				kc = killcountMap.get("RAIDS");
-				break;
-			case(LootTypes.THEATRE_OF_BLOOD):
+			case THEATRE_OF_BLOOD:
 				kc = killcountMap.get("RAIDS 2");
 				break;
-			case(LootTypes.CLUE_SCROLL_EASY):
-			case(LootTypes.CLUE_SCROLL_MEDIUM):
-			case(LootTypes.CLUE_SCROLL_HARD):
-			case(LootTypes.CLUE_SCROLL_ELITE):
-			case(LootTypes.CLUE_SCROLL_MASTER):
-				kc = killcountMap.get(e.getEvent());
+			case BARROWS:
+			case RAIDS:
+			case CLUE_SCROLL_EASY:
+			case CLUE_SCROLL_MEDIUM:
+			case CLUE_SCROLL_HARD:
+			case CLUE_SCROLL_ELITE:
+			case CLUE_SCROLL_MASTER:
+				kc = killcountMap.get(eventName);
 				break;
-			case(LootTypes.UNKNOWN_EVENT):
+			case UNKNOWN_EVENT:
 				log.debug("Unknown Event: {}", e);
 				break;
 			default:
@@ -173,10 +170,10 @@ public class BossLoggerPlugin extends Plugin
 		LootEntry entry = new LootEntry(kc, e.getItems());
 		// Got a pet?
 		if (gotPet)
-			entry.addDrop(handlePet(e.getEvent()));
-		addLootEntry(e.getEvent(), entry);
+			entry.addDrop(handlePet(eventName));
+		addLootEntry(eventName, entry);
 
-		BossLoggedAlert("Loot from " + e.getEvent().toLowerCase() + " added to log.");
+		BossLoggedAlert("Loot from " + eventName.toLowerCase() + " added to log.");
 	}
 
 	// Only check for Boss NPCs
@@ -280,30 +277,31 @@ public class BossLoggerPlugin extends Plugin
 		Matcher clueScroll = CLUE_SCROLL_PATTERN.matcher(chatMessage);
 		if (clueScroll.find())
 		{
-			String type = null;
+			LootEventType type = null;
 			switch (clueScroll.group(1).toUpperCase())
 			{
 				case "EASY":
-					type = LootTypes.CLUE_SCROLL_EASY;
+					type = LootEventType.CLUE_SCROLL_EASY;
 					break;
 				case "MEDIUM":
-					type = LootTypes.CLUE_SCROLL_MEDIUM;
+					type = LootEventType.CLUE_SCROLL_MEDIUM;
 					break;
 				case "HARD":
-					type = LootTypes.CLUE_SCROLL_HARD;
+					type = LootEventType.CLUE_SCROLL_HARD;
 					break;
 				case "ELITE":
-					type = LootTypes.CLUE_SCROLL_ELITE;
+					type = LootEventType.CLUE_SCROLL_ELITE;
 					break;
 				case "MASTER":
-					type = LootTypes.CLUE_SCROLL_MASTER;
+					type = LootEventType.CLUE_SCROLL_MASTER;
 					break;
 			}
 
 			if (type == null)
 				return;
+			String name = type.name().replaceAll("_", " ");
 
-			killcountMap.put(type, Integer.valueOf(clueScroll.group(0)));
+			killcountMap.put(name, Integer.valueOf(clueScroll.group(0)));
 			return;
 		}
 
