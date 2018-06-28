@@ -515,7 +515,7 @@ public class BossLoggerPlugin extends Plugin
 		Tab tab = Tab.getByBossName(bossName);
 		if (tab == null)
 		{
-			log.debug("Cant find tab for boss: {0}", bossName);
+			log.debug("Cant find tab for boss: {}", bossName);
 			return;
 		}
 
@@ -528,7 +528,7 @@ public class BossLoggerPlugin extends Plugin
 
 		if (!success)
 		{
-			log.debug("Couldn't add entry to tab. (tab: {0} | entry: {1})", tab, entry);
+			log.debug("Couldn't add entry to tab. (tab: {} | entry: {})", tab, entry);
 			return;
 		}
 
