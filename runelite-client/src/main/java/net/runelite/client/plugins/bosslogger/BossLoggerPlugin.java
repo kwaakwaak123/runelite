@@ -43,7 +43,6 @@ import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
-import net.runelite.api.ItemID;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.WidgetLoaded;
@@ -213,24 +212,12 @@ public class BossLoggerPlugin extends Plugin
 		// Received unsired loot?
 		if (event.getGroupId() == WidgetID.DIALOG_SPRITE_GROUP_ID)
 		{
-			Widget sprite = client.getWidget(WidgetInfo.DIALOG_SPRITE);
-			int itemID = sprite.getItemId();
-			switch (itemID)
+			Widget text = client.getWidget(WidgetInfo.DIALOG_SPRITE_TEXT);
+			if ("The Font consumes the Unsired and returns you a reward.".equals(text.getText()))
 			{
-				case ItemID.BLUDGEON_CLAW:
-				case ItemID.BLUDGEON_SPINE:
-				case ItemID.BLUDGEON_AXON:
-				case ItemID.ABYSSAL_DAGGER:
-				case ItemID.ABYSSAL_WHIP:
-				case ItemID.ABYSSAL_ORPHAN:
-				case ItemID.ABYSSAL_HEAD:
-				case ItemID.JAR_OF_MIASMA:
-					break;
-				default:
-					return;
+				Widget sprite = client.getWidget(WidgetInfo.DIALOG_SPRITE);
+				receivedUnsiredLoot(sprite.getItemId());
 			}
-
-			receivedUnsiredLoot(itemID);
 		}
 	}
 
