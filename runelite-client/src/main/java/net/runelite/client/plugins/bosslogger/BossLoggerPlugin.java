@@ -278,7 +278,7 @@ public class BossLoggerPlugin extends Plugin
 		if (clueScroll.find())
 		{
 			LootEventType type = null;
-			switch (clueScroll.group(1).toUpperCase())
+			switch (clueScroll.group(2).toUpperCase())
 			{
 				case "EASY":
 					type = LootEventType.CLUE_SCROLL_EASY;
@@ -301,7 +301,7 @@ public class BossLoggerPlugin extends Plugin
 				return;
 			String name = type.name().replaceAll("_", " ");
 
-			killcountMap.put(name, Integer.valueOf(clueScroll.group(0)));
+			killcountMap.put(name, Integer.valueOf(clueScroll.group(1)));
 			return;
 		}
 

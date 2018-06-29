@@ -40,9 +40,12 @@ public class LootEntry
 	public LootEntry(int killCount, List<ItemStack> d)
 	{
 		ArrayList<DropEntry> drops = new ArrayList<>();
-		for (ItemStack i : d)
+		if (d != null)
 		{
-			drops.add(new DropEntry(i.getId(), i.getQuantity()));
+			for (ItemStack i : d)
+			{
+				drops.add(new DropEntry(i.getId(), i.getQuantity()));
+			}
 		}
 		this.killCount = killCount;
 		this.drops = drops;

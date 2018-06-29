@@ -175,11 +175,11 @@ public enum UniqueItem
 	VETION_JR("Vet'ion jr.", ItemID.VETION_JR , "Vet'ion", "Uniques", 0),
 	SKELETON_CHAMPION_SCROLL("Skeleton champion scroll", ItemID.SKELETON_CHAMPION_SCROLL , "Vet'ion", "Uniques", 0),
 	// Venenatis
-	TREASONOUS_RING("Treasonous ring", ItemID.TREASONOUS_RING , "Venenatis", "Uniques", 0),
-	VENENATIS_SPIDERLING("Venenatis spiderling", ItemID.VENENATIS_SPIDERLING , "Venenatis", "Uniques", 0),
+	TREASONOUS_RING("Treasonous ring", ItemID.TREASONOUS_RING , "Venenatis", "Uniques", -1),
+	VENENATIS_SPIDERLING("Venenatis spiderling", ItemID.VENENATIS_SPIDERLING , "Venenatis", "Uniques", -1),
 	// Callisto
-	TYRANNICAL_RING("Tyrannical ring", ItemID.TYRANNICAL_RING , "Callisto", "Uniques", 0),
-	CALLISTO_CUB("Callisto cub", ItemID.CALLISTO_CUB , "Callisto", "Uniques", 0),
+	TYRANNICAL_RING("Tyrannical ring", ItemID.TYRANNICAL_RING , "Callisto", "Uniques", -1),
+	CALLISTO_CUB("Callisto cub", ItemID.CALLISTO_CUB , "Callisto", "Uniques", -1),
 	// Chaos Elemental Uniques are all in Shared
 	// Chaos Fanatic
 	ODIUM_SHARD_1("Odium shard 1", ItemID.ODIUM_SHARD_1 , "Chaos Fanatic", "Uniques", -1),
@@ -218,7 +218,7 @@ public enum UniqueItem
 	ABYSSAL_WHIP("Abyssal whip", ItemID.ABYSSAL_WHIP, "Abyssal Sire", "Uniques 2", 1),
 	ABYSSAL_ORPHAN("Abyssal orphan", ItemID.ABYSSAL_ORPHAN, "Abyssal Sire", "Uniques 2", 1),
 	JAR_OF_MIASMA("Jar of miasma", ItemID.JAR_OF_MIASMA, "Abyssal Sire", "Uniques 2", 1),
-	ABYSSAL_HEAD("Abyssal head", ItemID.ABYSSAL_HEAD, "Abyssal Sire", "Uniques 3", 2),
+	ABYSSAL_HEAD("Abyssal head", ItemID.ABYSSAL_HEAD, "Abyssal Sire", "Uniques 2", 1),
 	// Kraken
 	TRIDENT_OF_THE_SEAS_FULL("Trident of the seas (full)", ItemID.TRIDENT_OF_THE_SEAS_FULL, "Kraken", "Uniques", 0),
 	KRAKEN_TENTACLE("Kraken tentacle", ItemID.KRAKEN_TENTACLE, "Kraken", "Uniques", 0),
