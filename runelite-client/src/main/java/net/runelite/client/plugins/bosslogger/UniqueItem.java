@@ -48,7 +48,7 @@ public enum UniqueItem
 	DRAGON_PICKAXE("Dragon pickaxe", ItemID.DRAGON_PICKAXE , "Callisto", "Vet'ion", "Venenatis", "King Black Dragon"),
 	DRAGON_2H_SWORD("Dragon 2h sword", ItemID.DRAGON_2H_SWORD , "Callisto", "Vet'ion", "Venenatis", "Kalphite Queen"),
 	// Other
-	DRAGON_CHAINBODY("Dragon chainbody", ItemID.DRAGON_CHAINBODY, "Thermonuclear Smoke Devil", "Kalphite Queen"),
+	DRAGON_CHAINBODY("Dragon chainbody", ItemID.DRAGON_CHAINBODY_3140, "Thermonuclear Smoke Devil", "Kalphite Queen"),
 	DRAGON_AXE("Dragon axe", ItemID.DRAGON_AXE, "Dagannoth Rex", "Dagannoth Prime", "Dagannoth Supreme"),
 	UNCUT_ONYX("Uncut onyx", ItemID.UNCUT_ONYX, "Zulrah", "Skotizo"),
 

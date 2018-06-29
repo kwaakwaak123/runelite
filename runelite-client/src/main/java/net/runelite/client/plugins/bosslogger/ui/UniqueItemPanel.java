@@ -98,8 +98,21 @@ class UniqueItemPanel extends JPanel
 			// If we have a loot entry for this item then update the icon accordingly
 			if (it != null)
 			{
-				quantity = it.getAmount();
-				shouldStack = shouldStack || it.getAmount() > 1;
+				quantity += it.getAmount();
+				shouldStack = shouldStack || quantity > 1;
+				if (quantity > 0)
+				{
+					alpha = alphaHas;
+				}
+			}
+
+			// Check for any noted variants as well
+			LootRecord notedIt = loots.get(comp.getLinkedNoteId());
+			// If we have a loot entry for this item then update the icon accordingly
+			if (notedIt != null)
+			{
+				quantity += notedIt.getAmount();
+				shouldStack = shouldStack || quantity > 1;
 				if (quantity > 0)
 				{
 					alpha = alphaHas;
