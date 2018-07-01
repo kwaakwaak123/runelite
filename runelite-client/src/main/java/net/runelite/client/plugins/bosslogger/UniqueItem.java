@@ -136,7 +136,7 @@ public enum UniqueItem
 
 	// Vorkath
 	DRAGONBONE_NECKLACE("Dragonbone necklace", ItemID.DRAGONBONE_NECKLACE, "Vorkath", "Uniques", 0),
-	VORKATHS_HEAD("Vorkath's head", ItemID.VORKATHS_HEAD, "Vorkath", "Uniques", 0),
+	VORKATHS_HEAD("Vorkath's head", ItemID.VORKATHS_HEAD_21907, "Vorkath", "Uniques", 0),
 	JAR_OF_DECAY("Jar of decay", ItemID.JAR_OF_DECAY, "Vorkath", "Uniques", 0),
 	VORKI("Vorki", ItemID.VORKI, "Vorkath", "Uniques", 0),
 	SKELETAL_VISAGE("Skeletal visage", ItemID.SKELETAL_VISAGE, "Vorkath", "Uniques", 0),
