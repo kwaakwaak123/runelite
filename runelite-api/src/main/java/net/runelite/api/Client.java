@@ -1395,4 +1395,13 @@ public interface Client extends GameEngine
 	 * @param state boolean enabled value
 	 */
 	void setOculusOrbState(int state);
+
+	/**
+	 * Creates a new Item
+	 *
+	 * @param id Item ID
+	 * @param quantity Item quantity
+	 * @return new Item
+	 */
+	Item createItem(int id, int quantity);
 }
