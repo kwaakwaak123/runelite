@@ -30,12 +30,7 @@ import net.runelite.client.config.ConfigItem;
 
 import java.awt.Color;
 
-@ConfigGroup(
-	keyName = "bosslogger",
-	name = "Boss Logger",
-	description = "Configuration for the Boss Logger plugin"
-)
-
+@ConfigGroup("bosslogger")
 public interface BossLoggerConfig extends Config
 {
 	@ConfigItem(

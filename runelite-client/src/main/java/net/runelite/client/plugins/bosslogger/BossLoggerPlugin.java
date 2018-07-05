@@ -43,6 +43,7 @@ import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
+import net.runelite.api.Item;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.WidgetLoaded;
@@ -56,7 +57,6 @@ import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.loot.LootEventType;
-import net.runelite.client.game.loot.data.ItemStack;
 import net.runelite.client.game.loot.events.EventLootReceived;
 import net.runelite.client.game.loot.events.NpcLootReceived;
 import net.runelite.client.plugins.Plugin;
@@ -69,7 +69,9 @@ import net.runelite.client.ui.PluginToolbar;
 import net.runelite.client.util.Text;
 
 @PluginDescriptor(
-	name = "Boss Logger"
+	name = "Boss Logger",
+	description = "Log loot from PvM bosses",
+	tags = {"boss", "loot", "logger", "recorder"}
 )
 @Slf4j
 public class BossLoggerPlugin extends Plugin
@@ -483,7 +485,7 @@ public class BossLoggerPlugin extends Plugin
 	//
 
 	// Adds the data to the correct boss log file
-	private void AddBossLootEntry(String bossName, List<ItemStack> drops)
+	private void AddBossLootEntry(String bossName, List<Item> drops)
 	{
 		int KC = killcountMap.get(bossName.toUpperCase());
 		LootEntry newEntry = new LootEntry(KC, drops);
