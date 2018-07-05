@@ -127,12 +127,12 @@ public class LootLogger
 	 * or null if they are the same as in the previous tick.
 	 */
 	private Set<InventoryItem> thisTickInventoryItems;
-	private boolean hasOpenedRaidsRewardChest = false;
-	private boolean hasOpenedTheatreOfBloodRewardChest = false;
 
 	private Set<Item> thisTickInventoryPickDrop;
 
 	private boolean insideChambersOfXeric = false;
+	private boolean hasOpenedRaidsRewardChest = false;
+	private boolean hasOpenedTheatreOfBloodRewardChest = false;
 
 	@Inject
 	private LootLogger(EventBus eventBus)
@@ -1214,11 +1214,6 @@ public class LootLogger
 				log.debug("Error finding clue scroll Item Container");
 			}
 		}
-		else if (event.getGroupId() == WidgetID.THEATRE_OF_BLOOD_GROUP_ID && !hasOpenedTheatreOfBloodRewardChest)
-		{
-			completedTheatreOfBloodThisTick = true;
-			hasOpenedTheatreOfBloodRewardChest = true;
-		}
 	}
 
 	/**
@@ -1307,18 +1302,6 @@ public class LootLogger
 			{
 				this.thisTickInventoryItems = createInventoryItemSet(Arrays.asList(items));
 			}
-		}
-		else if (event.getItemContainer() == client.getItemContainer(InventoryID.BARROWS_REWARD))
-		{
-			this.thisTickRewardItems = event.getItemContainer().getItems();
-		}
-		else if (event.getItemContainer() == client.getItemContainer(InventoryID.CHAMBERS_OF_XERIC_CHEST))
-		{
-			this.chambersOfXericItems = event.getItemContainer().getItems();
-		}
-		else if (event.getItemContainer() == client.getItemContainer(InventoryID.THEATRE_OF_BLOOD_CHEST))
-		{
-			this.theatreOfBloodItems = event.getItemContainer().getItems();
 		}
 	}
 
