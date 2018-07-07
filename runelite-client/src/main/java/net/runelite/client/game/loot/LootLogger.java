@@ -1175,7 +1175,14 @@ public class LootLogger
 		else if (event.getGroupId() == WidgetID.CLUE_SCROLL_REWARD_GROUP_ID)
 		{
 			// Not 100% sure this will work, needs testing. May need to convert to chat message.
-			Set<InventoryItem> itemDiff = Sets.difference(prevTickInventoryItems, thisTickInventoryItems);
+			ItemContainer inventory = client.getItemContainer(InventoryID.INVENTORY);
+			if (inventory == null)
+			{
+				log.debug("Unable to find Inventory Item Container.");
+				return;
+			}
+			List<Item> itemsNow = Arrays.asList(inventory.getItems());
+			Set<InventoryItem> itemDiff = Sets.difference(prevTickInventoryItems, itemListToInventoryItemSet(itemsNow));
 			LootEventType clueScrollType = LootEventType.UNKNOWN_EVENT;
 			for (InventoryItem item : itemDiff)
 			{
