@@ -1271,14 +1271,29 @@ public class LootLogger
 	public void onActorDespawned(ActorDespawned event)
 	{
 		MemorizedActor ma = interactedActors.get(event.getActor());
-		if (ma != null && (event.getActor().getHealthRatio() == 0))
+		if (ma != null)
 		{
 			interactedActors.remove(event.getActor());
+			double deathHealth = 0;
 
-			// This event runs before the ItemLayerChanged event,
-			// so we have to wait until the end of the game tick
-			// before we know what items were dropped
-			deadActorsThisTick.add(ma);
+			if (event.getActor() instanceof NPC)
+			{
+				NPC n = (NPC) event.getActor();
+				Double ratio = NpcHpDeath.npcDeathHealthPercent(n.getId());
+				if (ratio > 0.00)
+				{
+					deathHealth = Math.ceil(ratio * event.getActor().getHealth());
+				}
+			}
+
+			if (event.getActor().getHealthRatio() <= deathHealth)
+			{
+
+				// This event runs before the ItemLayerChanged event,
+				// so we have to wait until the end of the game tick
+				// before we know what items were dropped
+				deadActorsThisTick.add(ma);
+			}
 		}
 	}
 
