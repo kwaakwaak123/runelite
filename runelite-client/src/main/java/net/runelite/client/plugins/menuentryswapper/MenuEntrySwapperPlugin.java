@@ -387,11 +387,6 @@ public class MenuEntrySwapperPlugin extends Plugin
 			{
 				swap("pay", option, target, true);
 			}
-
-			if (config.swapDecant())
-			{
-				swap("decant", option, target, true);
-			}
 		}
 		else if (config.swapTravel() && option.equals("pass") && target.equals("energy barrier"))
 		{
@@ -485,6 +480,10 @@ public class MenuEntrySwapperPlugin extends Plugin
 		{
 			swap("empty", option, target, true);
 		}
+		else if (config.swapSireMinions() && option.equals("attack") && (target.contains("spawn") || target.contains("scion")))
+		{
+			walkHereFirst(target);
+		}
 	}
 
 	@Subscribe
@@ -542,6 +541,22 @@ public class MenuEntrySwapperPlugin extends Plugin
 			MenuEntry entry = entries[idxA];
 			entries[idxA] = entries[idxB];
 			entries[idxB] = entry;
+
+			client.setMenuEntries(entries);
+		}
+	}
+
+	private void walkHereFirst(String target)
+	{
+		MenuEntry[] entries = client.getMenuEntries();
+		int walkIdx = searchIndex(entries, "walk here", "", false);
+		int attackIdx = searchIndex(entries, "attack", target, false);
+
+		if (walkIdx >= 0 && attackIdx >= 0)
+		{
+			MenuEntry entry = entries[walkIdx];
+			entries[walkIdx] = entries[attackIdx];
+			entries[attackIdx] = entry;
 
 			client.setMenuEntries(entries);
 		}

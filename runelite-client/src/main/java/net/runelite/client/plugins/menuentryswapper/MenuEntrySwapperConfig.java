@@ -241,13 +241,13 @@ public interface MenuEntrySwapperConfig extends Config
 	}
 
 	@ConfigItem(
-		position = 19,
-		keyName = "swapDecant",
-		name = "Decant",
-		description = "Swap Talk-to with Decant for Bob Barter and Murky Matt at the Grand Exchange."
+			position = 18,
+			keyName = "swapSireMinions",
+			name = "Abyssal Sire",
+			description = "Swap Attack with Walk here for spawn and scions. Attack still available via right-click."
 	)
-	default boolean swapDecant()
+	default boolean swapSireMinions()
 	{
-		return false;
+		return true;
 	}
 }
