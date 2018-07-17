@@ -22,16 +22,26 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package net.runelite.client.plugins.droplogger.ui;
+package net.runelite.client.plugins.droplogger.data;
+import lombok.Getter;
 
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-
-public class LandingPanel extends JPanel
+public class DropEntry
 {
-	public LandingPanel()
+	@Getter
+	private final int id;
+
+	@Getter
+	private final int quantity;
+
+	public DropEntry(int itemId, int itemAmount)
 	{
-		super();
-		this.add(new JLabel("TEST"));
+		this.id = itemId;
+		this.quantity = itemAmount;
+	}
+
+	@Override
+	public String toString()
+	{
+		return "DropEntry{id=" + id + ", quantity=" + quantity + "}";
 	}
 }

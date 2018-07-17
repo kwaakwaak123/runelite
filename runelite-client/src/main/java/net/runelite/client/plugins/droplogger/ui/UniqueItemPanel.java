@@ -93,10 +93,10 @@ class UniqueItemPanel extends JPanel
 			// Check for any unique items (including noted variants)
 			LootRecord it = loots.get(itemID);
 			LootRecord linkedIt = loots.get(comp.getLinkedNoteId());
-			int quantity = (it == null ? 0 : it.getAmount()) + (it == null ? 0 : linkedIt.getAmount());
+			int quantity = (it == null ? 0 : it.getAmount()) + (linkedIt == null ? 0 : linkedIt.getAmount());
 			float finalAlpha = (quantity > 0 ? alphaHas : alphaMissing);
 
-			AsyncBufferedImage image = itemManager.getImage(itemID, quantity, true);
+			AsyncBufferedImage image = itemManager.getImage(itemID, quantity, quantity > 0);
 			BufferedImage opaque = createOpaqueImage(image, finalAlpha);
 
 			// Attach Image to Label and append label to Panel

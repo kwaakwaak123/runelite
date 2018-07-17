@@ -138,7 +138,7 @@ public class DropLoggerPlugin extends Plugin
 		{
 			icon = ImageIO.read(DropLoggerPlugin.class.getResourceAsStream("panel_icon.png"));
 		}
-		panel = new DropLoggerPanel();
+		panel = new DropLoggerPanel(this, itemManager);
 
 		NavigationButton navButton = NavigationButton.builder()
 			.tooltip("Drop Logger")
@@ -199,6 +199,27 @@ public class DropLoggerPlugin extends Plugin
 
 		// Ensure we are using the requested message coloring for in-game messages
 		updateMessageColor();
+	}
+
+	public void loadTabData(Boss tab)
+	{
+		loadLootEntries(tab);
+	}
+
+	// Load data for all bosses being recorded
+	private void loadAllData()
+	{
+		for (Boss tab : Boss.values())
+		{
+			loadLootEntries(tab);
+		}
+	}
+
+	// Returns stored data by tab
+	public ArrayList<LootEntry> getData(Boss tab)
+	{
+		// Loot Entries are stored on lootMap by boss name (upper cased)
+		return lootMap.get(tab);
 	}
 
 	private Item handlePet(String name)

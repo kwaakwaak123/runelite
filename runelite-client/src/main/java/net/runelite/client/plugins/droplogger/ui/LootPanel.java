@@ -27,6 +27,7 @@ package net.runelite.client.plugins.droplogger.ui;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -37,11 +38,11 @@ import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
 import lombok.Getter;
-import net.runelite.api.Item;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemID;
 import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.plugins.droplogger.data.DropEntry;
 import net.runelite.client.plugins.droplogger.data.UniqueItem;
 import net.runelite.client.plugins.droplogger.data.LootEntry;
 import net.runelite.client.plugins.droplogger.data.LootRecord;
@@ -84,7 +85,7 @@ public class LootPanel extends JPanel
 		this.records.forEach(rec ->
 		{
 			// Convert drop records into consolidated entries
-			List<Item> drops = rec.getDrops();
+			List<DropEntry> drops = rec.getDrops();
 			drops.forEach(de ->
 			{
 				ItemComposition item = itemManager.getUnnotedItemComposition(de.getId());

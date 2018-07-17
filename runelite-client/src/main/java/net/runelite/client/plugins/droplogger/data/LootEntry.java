@@ -24,6 +24,7 @@
  */
 package net.runelite.client.plugins.droplogger.data;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import net.runelite.api.Item;
@@ -34,16 +35,55 @@ public class LootEntry
 	private final Integer killCount;
 
 	@Getter
-	final List<Item> drops;
+	final List<DropEntry> drops;
 
-	public LootEntry(int killCount, List<Item> drops)
+	public LootEntry(int killCount, List<Item> d)
 	{
+		List<DropEntry> drops = new ArrayList<>();
+		if (d != null)
+		{
+			for (Item i : d)
+			{
+				drops.add(new DropEntry(i.getId(), i.getQuantity()));
+			}
+		}
 		this.killCount = killCount;
 		this.drops = drops;
 	}
 
 	public void addDrop(Item drop)
 	{
-		drops.add(drop);
+		DropEntry d = new DropEntry(drop.getId(), drop.getQuantity());
+		drops.add(d);
+	}
+
+	@Override
+	public String toString()
+	{
+		StringBuilder m = new StringBuilder();
+		m.append("LootRecord{killCount=")
+				.append(killCount)
+				.append(", drops=");
+		if (drops != null)
+		{
+			m.append("[");
+			boolean addComma = false;
+			for (DropEntry d : drops)
+			{
+				if (addComma)
+				{
+					m.append(", ");
+				}
+				m.append(d.toString());
+				addComma = true;
+			}
+			m.append("]");
+		}
+		else
+		{
+			m.append("null");
+		}
+		m.append("}");
+		return m.toString();
 	}
 }
