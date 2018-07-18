@@ -27,7 +27,6 @@ package net.runelite.client.plugins.droplogger.ui;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -42,8 +41,8 @@ import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemID;
 import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
-import net.runelite.client.plugins.droplogger.data.DropEntry;
 import net.runelite.client.plugins.droplogger.data.UniqueItem;
+import net.runelite.client.plugins.droplogger.data.DropEntry;
 import net.runelite.client.plugins.droplogger.data.LootEntry;
 import net.runelite.client.plugins.droplogger.data.LootRecord;
 import net.runelite.client.ui.ColorScheme;
@@ -52,16 +51,13 @@ import net.runelite.http.api.item.ItemPrice;
 @Getter
 public class LootPanel extends JPanel
 {
-	private DropLoggerPanel parent;
-
 	private ArrayList<LootEntry> records;
 	private Map<Integer, ArrayList<UniqueItem>> uniqueMap;
 	private Map<Integer, LootRecord> consolidated;
 	private ItemManager itemManager;
 
-	public LootPanel(DropLoggerPanel parent, ArrayList<LootEntry> records, Map<Integer, ArrayList<UniqueItem>> uniqueMap, ItemManager itemManager)
+	public LootPanel(ArrayList<LootEntry> records, Map<Integer, ArrayList<UniqueItem>> uniqueMap, ItemManager itemManager)
 	{
-		this.parent = parent;
 		this.records = records;
 		this.consolidated = new HashMap<>();
 		this.uniqueMap = uniqueMap;
@@ -81,10 +77,10 @@ public class LootPanel extends JPanel
 		// Clear consolidated array
 		this.consolidated.clear();
 
-		// Compile the drops for unique consolidated totals
+		// Compile the DropEntries for unique consolidated totals
 		this.records.forEach(rec ->
 		{
-			// Convert drop records into consolidated entries
+			// Convert DropEntries records into consolidated entries
 			List<DropEntry> drops = rec.getDrops();
 			drops.forEach(de ->
 			{

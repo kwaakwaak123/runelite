@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Woox <https://github.com/wooxsolo>
+ * Copyright (c) 2018, TheStonedTurtle <www.github.com/TheStonedTurtle>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,17 +46,17 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
+
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.droplogger.DropLoggerPlugin;
 import net.runelite.client.plugins.droplogger.data.Boss;
-import net.runelite.client.plugins.droplogger.data.LootEntry;
 import net.runelite.client.plugins.droplogger.data.UniqueItem;
+import net.runelite.client.plugins.droplogger.data.LootEntry;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.PluginErrorPanel;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
@@ -66,36 +66,64 @@ import static net.runelite.client.plugins.droplogger.ui.Constants.BACKGROUND_COL
 import static net.runelite.client.plugins.droplogger.ui.Constants.BUTTON_COLOR;
 import static net.runelite.client.plugins.droplogger.ui.Constants.BUTTON_HOVER_COLOR;
 
+
 @Slf4j
-public class DropLoggerPanel extends PluginPanel
+public class LoggerPanel extends PluginPanel
 {
-	private ItemManager itemManager;
+	private final ItemManager itemManager;
 	private final DropLoggerPlugin plugin;
 
 	// Displayed on Recorded Loot Page (updated for each tab)
-	private JPanel title;
 	private LootPanel lootPanel;
 	private Boss currentTab = null;
 
-	// Displayed on Landing/Selection Page
-	private PluginErrorPanel errorPanel;
-	private JPanel tabGroup;
-	private JPanel container;
+	private JPanel content;
+	private JPanel title;
 
-	public DropLoggerPanel(DropLoggerPlugin plugin, ItemManager itemManager)
+	// Icons for navigation
+	public static final BufferedImage BACK;
+	public static final BufferedImage REFRESH;
+	public static final BufferedImage DELETE;
+	static
+	{
+		BufferedImage back;
+		BufferedImage refresh;
+		BufferedImage delete;
+
+		try
+		{
+			synchronized (ImageIO.class)
+			{
+				back = ImageIO.read(DropLoggerPlugin.class.getResourceAsStream("back-arrow-white.png"));
+				refresh = ImageIO.read(DropLoggerPlugin.class.getResourceAsStream("refresh-white.png"));
+				delete = ImageIO.read(DropLoggerPlugin.class.getResourceAsStream("delete-white.png"));
+			}
+		}
+		catch (IOException e)
+		{
+			throw new RuntimeException(e);
+		}
+
+		BACK = back;
+		REFRESH = refresh;
+		DELETE = delete;
+	}
+
+	@Inject
+	public LoggerPanel(DropLoggerPlugin DropLoggerPlugin, ItemManager itemManager)
 	{
 		super(false);
 
-		this.plugin = plugin;
 		this.itemManager = itemManager;
+		this.plugin = DropLoggerPlugin;
 
 		this.setLayout(new BorderLayout());
 		this.setBackground(BACKGROUND_COLOR);
 
-		tabGroup = new JPanel();
-		tabGroup.setBorder(new EmptyBorder(0, 8, 0, 0));
-		tabGroup.setLayout(new GridBagLayout());
-		tabGroup.setBackground(BACKGROUND_COLOR);
+		content = new JPanel();
+		content.setBorder(new EmptyBorder(0, 8, 0, 0));
+		content.setLayout(new GridBagLayout());
+		content.setBackground(BACKGROUND_COLOR);
 
 		title = new JPanel();
 		title.setBorder(new CompoundBorder(
@@ -105,32 +133,26 @@ public class DropLoggerPanel extends PluginPanel
 		title.setLayout(new BorderLayout());
 		title.setBackground(BACKGROUND_COLOR);
 
-		errorPanel = new PluginErrorPanel();
-		errorPanel.setBorder(new EmptyBorder(10, 25, 10, 25));
-
 		createLandingPanel();
 	}
 
-	// Landing page (NPC Selection)
+	// Landing page (Boss Selection Screen)
 	private void createLandingPanel()
 	{
 		currentTab = null;
+
+		// Clear the current content containers
 		this.removeAll();
+		title.removeAll();
+		content.removeAll();
 
-		errorPanel.setContent("Drop Logger Plugin", "Select an NPC name or Boss icon to view the recorded loot for it");
+		// Title Element
+		PluginErrorPanel header = new PluginErrorPanel();
+		header.setBorder(new EmptyBorder(10, 25, 10, 25));
+		header.setContent("Boss Logger Plugin", "Select a boss icon to view the recorded loot for it");
+		title.add(header);
 
-		createTabGroup();
-
-		this.add(errorPanel, BorderLayout.NORTH);
-		this.add(wrapContainer(tabGroup), BorderLayout.CENTER);
-	}
-
-	private void createTabGroup()
-	{
-		tabGroup.removeAll();
-
-		// TODO: Add a list of previous killed NPCs ignoring the WatchList of NPCs
-
+		// Content Element
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
 		c.anchor = GridBagConstraints.NORTHWEST;
@@ -139,28 +161,38 @@ public class DropLoggerPanel extends PluginPanel
 		c.gridx = 0;
 		c.gridy = 0;
 
-		// Add the bosses tabs, by category, to tabGroup
+		// Add the Boss selection elements by category
 		Set<String> categories = Boss.categories;
 		for (String categoryName : categories)
 		{
-			createTabCategory(categoryName, c);
+			// Category Name
+			JLabel name = new JLabel(categoryName);
+			name.setBorder(new EmptyBorder(8, 0, 0, 0));
+			name.setForeground(Color.WHITE);
+			name.setVerticalAlignment(SwingConstants.CENTER);
+
+			MaterialTabGroup icons = createTabCategory(categoryName);
+
+			content.add(name, c);
+			c.gridy++;
+			content.add(icons, c);
+			c.gridy++;
 		}
+
+		// Re-add containers to the page.
+		this.add(title, BorderLayout.NORTH);
+		this.add(wrapContainer(content), BorderLayout.CENTER);
 	}
 
-	// Creates all tabs for a specific category
-	private void createTabCategory(String categoryName, GridBagConstraints c)
+	// Creates icons used for tab selection for a specific category
+	private MaterialTabGroup createTabCategory(String categoryName)
 	{
 		MaterialTabGroup thisTabGroup = new MaterialTabGroup();
 		thisTabGroup.setLayout(new GridLayout(0, 4, 7, 7));
 		thisTabGroup.setBorder(new EmptyBorder(4, 0, 0, 0));
 
-		JLabel name = new JLabel(categoryName);
-		name.setBorder(new EmptyBorder(8, 0, 0, 0));
-		name.setForeground(Color.WHITE);
-		name.setVerticalAlignment(SwingConstants.CENTER);
-
-		ArrayList<Boss> categoryTabs = Boss.getByCategoryName(categoryName);
-		for (Boss boss : categoryTabs)
+		ArrayList<Boss> categoryBosses = Boss.getByCategoryName(categoryName);
+		for (Boss boss : categoryBosses)
 		{
 			// Create tab (with hover effects/text)
 			MaterialTab materialTab = new MaterialTab("", thisTabGroup, null);
@@ -206,46 +238,45 @@ public class DropLoggerPanel extends PluginPanel
 			thisTabGroup.addTab(materialTab);
 		}
 
-		if (thisTabGroup.getComponentCount() > 0)
-		{
-			tabGroup.add(name, c);
-			c.gridy++;
-			tabGroup.add(thisTabGroup, c);
-			c.gridy++;
-		}
+		return thisTabGroup;
 	}
 
 	// Landing page (Boss Selection Screen)
-	private void createTabPanel(Boss tab)
+	private void createTabPanel(Boss boss)
 	{
-		currentTab = tab;
-		this.removeAll();
+		currentTab = boss;
 
-		createTabTitle(tab.getBossName());
+		// Clear all Data
+		this.removeAll();
+		title.removeAll();
+		content.removeAll();
+
+		// Tile Update
+		title = createLootPanelTitle(title, boss.getBossName());
+
+
+		// Content Update
+		// Ensure stored data is up to date with file.
+		plugin.loadTabData(boss);
+		// Grab Data to display from plugin
+		ArrayList<LootEntry> data = plugin.getData(boss);
+
+		// Do we have any unique items to track?
+		ArrayList<UniqueItem> list = UniqueItem.getByActivityName(boss.getName());
+		// Sort the list by requested position inside UI (negative->positive)
+		Map<Integer, ArrayList<UniqueItem>> sets = UniqueItem.createPositionSetMap(list);
+
+		// Create & Return Loot Panel
+		LootPanel panel = new LootPanel(data, sets, itemManager);
 
 		this.add(title, BorderLayout.NORTH);
-		this.add(wrapContainer(createLootPanel(tab)), BorderLayout.CENTER);
+		this.add(wrapContainer(panel), BorderLayout.CENTER);
 	}
 
-	private JLabel createIconLabel(String iconName)
+	// Icon Label with Hover effects
+	private JLabel createIconLabel(BufferedImage icon)
 	{
 		JLabel label = new JLabel();
-		BufferedImage icon = null;
-		synchronized (ImageIO.class)
-		{
-			try
-			{
-				icon = ImageIO.read(getClass().getResourceAsStream(iconName));
-			}
-			catch (IOException e)
-			{
-				log.warn("Error getting resource icon: {0} | Message: {1}", iconName, e.getMessage());
-			}
-		}
-
-		if (icon == null)
-			return label;
-
 		label.setIcon(new ImageIcon(icon));
 		label.setOpaque(true);
 		label.setBackground(BACKGROUND_COLOR);
@@ -268,16 +299,15 @@ public class DropLoggerPanel extends PluginPanel
 		return label;
 	}
 
-	// Creates the title panel for the recorded loot tab
-	private void createTabTitle(String name)
+	// Creates the title panel for the recorded loot tab inside the requested container
+	private JPanel createLootPanelTitle(JPanel container, String name)
 	{
-		title.removeAll();
-
+		// Container for Back button and Name
 		JPanel first = new JPanel();
 		first.setBackground(BACKGROUND_COLOR);
 
 		// Back Button
-		JLabel back = createIconLabel("back-arrow-white.png");
+		JLabel back = createIconLabel(BACK);
 		back.addMouseListener(new MouseAdapter()
 		{
 			@Override
@@ -287,18 +317,19 @@ public class DropLoggerPanel extends PluginPanel
 			}
 		});
 
-		// Plugin Name
+		// Name
 		JLabel text = new JLabel(name);
 		text.setForeground(Color.WHITE);
 
 		first.add(back);
 		first.add(text);
 
+		// Container for Action Buttons
 		JPanel second = new JPanel();
 		second.setBackground(BACKGROUND_COLOR);
 
 		// Refresh Data button
-		JLabel refresh = createIconLabel("refresh-white.png");
+		JLabel refresh = createIconLabel(REFRESH);
 		refresh.addMouseListener(new MouseAdapter()
 		{
 			@Override
@@ -309,7 +340,7 @@ public class DropLoggerPanel extends PluginPanel
 		});
 
 		// Clear data button
-		JLabel clear = createIconLabel("delete-white.png");
+		JLabel clear = createIconLabel(DELETE);
 		clear.addMouseListener(new MouseAdapter()
 		{
 			@Override
@@ -322,29 +353,15 @@ public class DropLoggerPanel extends PluginPanel
 		second.add(refresh);
 		second.add(clear);
 
-		title.add(first, BorderLayout.WEST);
-		title.add(second, BorderLayout.EAST);
+		container.add(first, BorderLayout.WEST);
+		container.add(second, BorderLayout.EAST);
+
+		return container;
 	}
 
-	// Wrapper for creating LootPanel
-	private JPanel createLootPanel(Boss tab)
+	private void showTabDisplay(Boss boss)
 	{
-		// Grab Tab Data
-		ArrayList<LootEntry> data = plugin.getData(tab);
-
-		// Unique Items Info
-		ArrayList<UniqueItem> list = UniqueItem.getByActivityName(tab.getName());
-		Map<Integer, ArrayList<UniqueItem>> sets = UniqueItem.createPositionSetMap(list);
-
-		// Create & Return Loot Panel
-		lootPanel = new LootPanel(this, data, sets, itemManager);
-
-		return lootPanel;
-	}
-
-	private void showTabDisplay(Boss tab)
-	{
-		createTabPanel(tab);
+		createTabPanel(boss);
 
 		this.revalidate();
 		this.repaint();
@@ -374,20 +391,20 @@ public class DropLoggerPanel extends PluginPanel
 	}
 
 	// Refresh the Loot Panel with updated data (requests the data from file)
-	private void refreshLootPanel(LootPanel lootPanel, Boss tab)
+	private void refreshLootPanel(LootPanel lootPanel, Boss boss)
 	{
 		// Refresh data for necessary tab
-		plugin.loadTabData(tab);
+		plugin.loadTabData(boss);
 
 		// Recreate the loot panel
-		lootPanel.updateRecords(plugin.getData(tab));
+		lootPanel.updateRecords(plugin.getData(boss));
 
 		// Ensure changes are applied
 		this.revalidate();
 		this.repaint();
 	}
 
-	private void clearData(Boss tab)
+	private void clearData(Boss boss)
 	{
 		if (lootPanel.getRecords().size() == 0)
 		{
@@ -398,44 +415,9 @@ public class DropLoggerPanel extends PluginPanel
 		int delete = JOptionPane.showConfirmDialog(this.getRootPane(), "<html>Are you sure you want to clear all data for this tab?<br/>There is no way to undo this action.</html>", "Warning", JOptionPane.YES_NO_OPTION);
 		if (delete == JOptionPane.YES_OPTION)
 		{
-			plugin.clearData(tab);
+			plugin.clearData(boss);
 			// Refresh current panel
-			refreshLootPanel(lootPanel, tab);
-		}
-	}
-
-	public void toggleTab(Boss tab)
-	{
-		// Recreate landing page if currently being shown or toggled active tab
-		if (currentTab == null || tab.equals(currentTab))
-			createLandingPanel();
-	}
-
-	// Refresh tab data if being shown
-	public void refreshCurrentTab()
-	{
-		if (currentTab != null)
-			showTabDisplay(currentTab);
-	}
-
-	// Updates panel for this tab name
-	public void updateTab(Boss tab)
-	{
-		// Change to tab of recently killed boss if on landing page
-		if (currentTab == null)
-		{
-			currentTab = tab;
-			SwingUtilities.invokeLater(() -> showTabDisplay(tab));
-			return;
-		}
-
-		// only update the tab if they are looking at this boss tab
-		if (tab.equals(currentTab))
-		{
-			// Reload data from file to ensure data and UI match
-			plugin.loadTabData(currentTab);
-			// Grab LootPanel that needs to be updated
-			SwingUtilities.invokeLater(() -> lootPanel.updateRecords(plugin.getData(tab)));
+			refreshLootPanel(lootPanel, boss);
 		}
 	}
 }

@@ -64,7 +64,7 @@ import net.runelite.client.plugins.droplogger.data.Boss;
 import net.runelite.client.plugins.droplogger.data.LootEntry;
 import net.runelite.client.plugins.droplogger.data.Pet;
 import net.runelite.client.plugins.droplogger.data.WatchNpcs;
-import net.runelite.client.plugins.droplogger.ui.DropLoggerPanel;
+import net.runelite.client.plugins.droplogger.ui.LoggerPanel;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.PluginToolbar;
 import net.runelite.client.util.Text;
@@ -100,10 +100,7 @@ public class DropLoggerPlugin extends Plugin
 
 	private BossLoggerWriter writer;
 
-	private DropLoggerPanel panel;
-
-	// Used to help calculate hourly rates
-	private int tickCounter;
+	private LoggerPanel panel;
 
 	// Chat Message Regex
 	private static final Pattern NUMBER_PATTERN = Pattern.compile("([0-9]+)");
@@ -115,6 +112,8 @@ public class DropLoggerPlugin extends Plugin
 	// In-game notification message color
 	private String messageColor = "";
 	private boolean gotPet = false;
+
+	private int tickCounter = 0;
 
 	// Mapping Variables
 	private Map<Boss, Boolean> recordingMap = new HashMap<>(); 				// Store config recording value for each Tab
@@ -138,7 +137,7 @@ public class DropLoggerPlugin extends Plugin
 		{
 			icon = ImageIO.read(DropLoggerPlugin.class.getResourceAsStream("panel_icon.png"));
 		}
-		panel = new DropLoggerPanel(this, itemManager);
+		panel = new LoggerPanel(this, itemManager);
 
 		NavigationButton navButton = NavigationButton.builder()
 			.tooltip("Drop Logger")
@@ -387,6 +386,7 @@ public class DropLoggerPlugin extends Plugin
 		addDropToLastLootEntry(Boss.ABYSSAL_SIRE, drop);
 	}
 
+	// Clear stored data for specific boss
 	public void clearData(Boss boss)
 	{
 		log.debug("Clearing data for boss: " + boss.getName());
@@ -399,8 +399,6 @@ public class DropLoggerPlugin extends Plugin
 		Color c = config.chatMessageColor();
 		messageColor = String.format("%02x%02x%02x", c.getRed(), c.getGreen(), c.getBlue());
 	}
-
-
 
 	@Subscribe
 	protected void onEventLootReceived(EventLootReceived e)
