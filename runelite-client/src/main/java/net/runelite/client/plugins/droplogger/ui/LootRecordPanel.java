@@ -28,32 +28,31 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
-
 import lombok.Getter;
 import net.runelite.client.plugins.droplogger.data.LootRecord;
-import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.components.shadowlabel.JShadowedLabel;
 import net.runelite.client.util.StackFormatter;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 
+import static net.runelite.client.plugins.droplogger.ui.Constants.BACKGROUND_COLOR;
+import static net.runelite.client.plugins.droplogger.ui.Constants.BUTTON_COLOR;
+import static net.runelite.client.plugins.droplogger.ui.Constants.CONTENT_BORDER;
+import static net.runelite.client.plugins.droplogger.ui.Constants.RECORD_BORDER;
+import static net.runelite.client.plugins.droplogger.ui.Constants.TOTAL_VALUE;
+
+
 @Getter
 class LootRecordPanel extends JPanel
 {
 	private static final GridBagLayout LAYOUT = new GridBagLayout();
 
-	private static final Border PANEL_BORDER = new EmptyBorder(3, 0, 3, 0);
-	private static final Color PANEL_BACKGROUND_COLOR = ColorScheme.DARK_GRAY_COLOR;
-
-	private static final Border CONTAINER_BORDER = new EmptyBorder(0, 15, 0, 15);
-	private static final Color CONTAINER_BACKGROUND_COLOR = ColorScheme.DARKER_GRAY_COLOR;
+	private static final Color CONTAINER_BACKGROUND_COLOR = BUTTON_COLOR;
 
 	private LootRecord record;
 
@@ -61,8 +60,8 @@ class LootRecordPanel extends JPanel
 	{
 		this.record = record;
 		this.setLayout(LAYOUT);
-		this.setBorder(PANEL_BORDER);
-		this.setBackground(PANEL_BACKGROUND_COLOR);
+		this.setBorder(RECORD_BORDER);
+		this.setBackground(BACKGROUND_COLOR);
 
 		// Item Image Icon
 		JLabel icon = new JLabel();
@@ -106,10 +105,10 @@ class LootRecordPanel extends JPanel
 	LootRecordPanel(long totalValue)
 	{
 		this.setLayout(LAYOUT);
-		this.setBorder(PANEL_BORDER);
-		this.setBackground(PANEL_BACKGROUND_COLOR);
+		this.setBorder(RECORD_BORDER);
+		this.setBackground(BACKGROUND_COLOR);
 
-		JLabel totalText = new JLabel("Total Value:", SwingConstants.LEFT);
+		JLabel totalText = new JLabel(TOTAL_VALUE, SwingConstants.LEFT);
 		totalText.setForeground(Color.WHITE);
 
 		// Item Values (Colored off Total Value of item)
@@ -133,12 +132,12 @@ class LootRecordPanel extends JPanel
 	}
 
 
-	// Used specifically for the Killcount entry
+	// Used specifically for the Kill count entry
 	LootRecordPanel(String text, int value)
 	{
 		this.setLayout(LAYOUT);
-		this.setBorder(PANEL_BORDER);
-		this.setBackground(PANEL_BACKGROUND_COLOR);
+		this.setBorder(RECORD_BORDER);
+		this.setBackground(BACKGROUND_COLOR);
 
 		JLabel textLabel = new JLabel(text, SwingConstants.LEFT);
 		textLabel.setForeground(Color.WHITE);
@@ -164,7 +163,7 @@ class LootRecordPanel extends JPanel
 	{
 		JPanel panel = new JPanel();
 		panel.setLayout(new BorderLayout());
-		panel.setBorder(CONTAINER_BORDER);
+		panel.setBorder(CONTENT_BORDER);
 		panel.setBackground(CONTAINER_BACKGROUND_COLOR);
 
 		return panel;

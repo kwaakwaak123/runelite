@@ -28,26 +28,26 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
-import javax.swing.border.Border;
-import javax.swing.border.EmptyBorder;
-
 import lombok.Getter;
 import net.runelite.api.ItemComposition;
 import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.droplogger.data.LootRecord;
 import net.runelite.client.plugins.droplogger.data.UniqueItem;
-import net.runelite.client.ui.ColorScheme;
-
 import java.awt.AlphaComposite;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Map;
+
+import static net.runelite.client.plugins.droplogger.ui.Constants.ALPHA_HAS;
+import static net.runelite.client.plugins.droplogger.ui.Constants.ALPHA_MISSING;
+import static net.runelite.client.plugins.droplogger.ui.Constants.BACKGROUND_COLOR;
+import static net.runelite.client.plugins.droplogger.ui.Constants.BUTTON_COLOR;
+import static net.runelite.client.plugins.droplogger.ui.Constants.RECORD_BORDER;
 
 @Getter
 class UniqueItemPanel extends JPanel
@@ -56,27 +56,20 @@ class UniqueItemPanel extends JPanel
 	private ArrayList<UniqueItem> items;
 	private Map<Integer, LootRecord> loots;
 
-	private final float alphaMissing = 0.35f;
-	private final float alphaHas = 1.0f;
-
-	private static final Border panelBorder = new EmptyBorder(3, 0, 3, 0);
-	private static final Color panelBackgroundColor = ColorScheme.DARK_GRAY_COLOR;
-
 	UniqueItemPanel(ArrayList<UniqueItem> items, Map<Integer, LootRecord> loots, ItemManager itemManager)
 	{
 		this.items = items;
 		this.loots = loots;
 		this.itemManager = itemManager;
 
-
 		JPanel panel = new JPanel();
 		panel.setLayout(new GridBagLayout());
-		panel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		panel.setBorder(new EmptyBorder(3, 0, 3, 0));
+		panel.setBackground(BUTTON_COLOR);
+		panel.setBorder(RECORD_BORDER);
 
 		this.setLayout(new BorderLayout());
-		this.setBorder(panelBorder);
-		this.setBackground(panelBackgroundColor);
+		this.setBorder(RECORD_BORDER);
+		this.setBackground(BACKGROUND_COLOR);
 
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.BOTH;
@@ -94,7 +87,7 @@ class UniqueItemPanel extends JPanel
 			LootRecord it = loots.get(itemID);
 			LootRecord linkedIt = loots.get(comp.getLinkedNoteId());
 			int quantity = (it == null ? 0 : it.getAmount()) + (linkedIt == null ? 0 : linkedIt.getAmount());
-			float finalAlpha = (quantity > 0 ? alphaHas : alphaMissing);
+			float finalAlpha = (quantity > 0 ? ALPHA_HAS : ALPHA_MISSING);
 
 			AsyncBufferedImage image = itemManager.getImage(itemID, quantity, quantity > 0);
 			BufferedImage opaque = createOpaqueImage(image, finalAlpha);

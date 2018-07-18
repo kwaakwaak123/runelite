@@ -27,14 +27,12 @@ package net.runelite.client.plugins.droplogger;
 import com.google.common.eventbus.Subscribe;
 import com.google.inject.Provides;
 import java.awt.Color;
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.imageio.ImageIO;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +66,8 @@ import net.runelite.client.plugins.droplogger.ui.LoggerPanel;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.PluginToolbar;
 import net.runelite.client.util.Text;
+
+import static net.runelite.client.plugins.droplogger.ui.Constants.PANEL;
 
 @PluginDescriptor(
 		name = "Drop Logger",
@@ -132,17 +132,12 @@ public class DropLoggerPlugin extends Plugin
 	{
 		init();
 
-		BufferedImage icon;
-		synchronized (ImageIO.class)
-		{
-			icon = ImageIO.read(DropLoggerPlugin.class.getResourceAsStream("panel_icon.png"));
-		}
 		panel = new LoggerPanel(this, itemManager);
 
 		NavigationButton navButton = NavigationButton.builder()
 			.tooltip("Drop Logger")
 			.priority(3)
-			.icon(icon)
+			.icon(PANEL)
 			.panel(panel)
 			.build();
 		this.pluginToolbar.addNavigation(navButton);

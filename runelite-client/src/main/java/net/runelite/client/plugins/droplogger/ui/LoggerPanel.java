@@ -34,11 +34,9 @@ import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
-import javax.imageio.ImageIO;
 import javax.inject.Inject;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
@@ -46,10 +44,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
-import javax.swing.border.CompoundBorder;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.MatteBorder;
-
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
@@ -65,6 +59,18 @@ import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
 import static net.runelite.client.plugins.droplogger.ui.Constants.BACKGROUND_COLOR;
 import static net.runelite.client.plugins.droplogger.ui.Constants.BUTTON_COLOR;
 import static net.runelite.client.plugins.droplogger.ui.Constants.BUTTON_HOVER_COLOR;
+import static net.runelite.client.plugins.droplogger.ui.Constants.CONFIRM_DELETE_MESSAGE;
+import static net.runelite.client.plugins.droplogger.ui.Constants.CONTENT_BORDER;
+import static net.runelite.client.plugins.droplogger.ui.Constants.NO_DATA_MESSAGE;
+import static net.runelite.client.plugins.droplogger.ui.Constants.PLUGIN_DESCRIPTION;
+import static net.runelite.client.plugins.droplogger.ui.Constants.PLUGIN_ERROR_PANEL_BORDER;
+import static net.runelite.client.plugins.droplogger.ui.Constants.PLUGIN_NAME;
+import static net.runelite.client.plugins.droplogger.ui.Constants.SCROLL_BAR_SIZE;
+import static net.runelite.client.plugins.droplogger.ui.Constants.TITLE_BORDER;
+import static net.runelite.client.plugins.droplogger.ui.Constants.BACK;
+import static net.runelite.client.plugins.droplogger.ui.Constants.DELETE;
+import static net.runelite.client.plugins.droplogger.ui.Constants.REFRESH;
+import static net.runelite.client.plugins.droplogger.ui.Constants.TOP_BORDER;
 
 
 @Slf4j
@@ -73,41 +79,13 @@ public class LoggerPanel extends PluginPanel
 	private final ItemManager itemManager;
 	private final DropLoggerPlugin plugin;
 
-	// Displayed on Recorded Loot Page (updated for each tab)
+	// Keep Reference to current LootPanel, needed to clear data
 	private LootPanel lootPanel;
 	private Boss currentTab = null;
 
 	private JPanel content;
 	private JPanel title;
 
-	// Icons for navigation
-	public static final BufferedImage BACK;
-	public static final BufferedImage REFRESH;
-	public static final BufferedImage DELETE;
-	static
-	{
-		BufferedImage back;
-		BufferedImage refresh;
-		BufferedImage delete;
-
-		try
-		{
-			synchronized (ImageIO.class)
-			{
-				back = ImageIO.read(DropLoggerPlugin.class.getResourceAsStream("back-arrow-white.png"));
-				refresh = ImageIO.read(DropLoggerPlugin.class.getResourceAsStream("refresh-white.png"));
-				delete = ImageIO.read(DropLoggerPlugin.class.getResourceAsStream("delete-white.png"));
-			}
-		}
-		catch (IOException e)
-		{
-			throw new RuntimeException(e);
-		}
-
-		BACK = back;
-		REFRESH = refresh;
-		DELETE = delete;
-	}
 
 	@Inject
 	public LoggerPanel(DropLoggerPlugin DropLoggerPlugin, ItemManager itemManager)
@@ -121,15 +99,12 @@ public class LoggerPanel extends PluginPanel
 		this.setBackground(BACKGROUND_COLOR);
 
 		content = new JPanel();
-		content.setBorder(new EmptyBorder(0, 8, 0, 0));
+		content.setBorder(CONTENT_BORDER);
 		content.setLayout(new GridBagLayout());
 		content.setBackground(BACKGROUND_COLOR);
 
 		title = new JPanel();
-		title.setBorder(new CompoundBorder(
-				new EmptyBorder(10, 8, 8, 8),
-				new MatteBorder(0, 0, 1, 0, Color.GRAY)
-		));
+		title.setBorder(TITLE_BORDER);
 		title.setLayout(new BorderLayout());
 		title.setBackground(BACKGROUND_COLOR);
 
@@ -148,8 +123,8 @@ public class LoggerPanel extends PluginPanel
 
 		// Title Element
 		PluginErrorPanel header = new PluginErrorPanel();
-		header.setBorder(new EmptyBorder(10, 25, 10, 25));
-		header.setContent("Boss Logger Plugin", "Select a boss icon to view the recorded loot for it");
+		header.setBorder(PLUGIN_ERROR_PANEL_BORDER);
+		header.setContent(PLUGIN_NAME, PLUGIN_DESCRIPTION);
 		title.add(header);
 
 		// Content Element
@@ -167,7 +142,7 @@ public class LoggerPanel extends PluginPanel
 		{
 			// Category Name
 			JLabel name = new JLabel(categoryName);
-			name.setBorder(new EmptyBorder(8, 0, 0, 0));
+			name.setBorder(TOP_BORDER);
 			name.setForeground(Color.WHITE);
 			name.setVerticalAlignment(SwingConstants.CENTER);
 
@@ -189,7 +164,7 @@ public class LoggerPanel extends PluginPanel
 	{
 		MaterialTabGroup thisTabGroup = new MaterialTabGroup();
 		thisTabGroup.setLayout(new GridLayout(0, 4, 7, 7));
-		thisTabGroup.setBorder(new EmptyBorder(4, 0, 0, 0));
+		thisTabGroup.setBorder(TOP_BORDER);
 
 		ArrayList<Boss> categoryBosses = Boss.getByCategoryName(categoryName);
 		for (Boss boss : categoryBosses)
@@ -267,10 +242,10 @@ public class LoggerPanel extends PluginPanel
 		Map<Integer, ArrayList<UniqueItem>> sets = UniqueItem.createPositionSetMap(list);
 
 		// Create & Return Loot Panel
-		LootPanel panel = new LootPanel(data, sets, itemManager);
+		lootPanel = new LootPanel(data, sets, itemManager);
 
 		this.add(title, BorderLayout.NORTH);
-		this.add(wrapContainer(panel), BorderLayout.CENTER);
+		this.add(wrapContainer(lootPanel), BorderLayout.CENTER);
 	}
 
 	// Icon Label with Hover effects
@@ -384,7 +359,7 @@ public class LoggerPanel extends PluginPanel
 
 		JScrollPane scroller = new JScrollPane(wrapped);
 		scroller.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-		scroller.getVerticalScrollBar().setPreferredSize(new Dimension(8, 0));
+		scroller.getVerticalScrollBar().setPreferredSize(SCROLL_BAR_SIZE);
 		scroller.setBackground(BACKGROUND_COLOR);
 
 		return scroller;
@@ -408,11 +383,11 @@ public class LoggerPanel extends PluginPanel
 	{
 		if (lootPanel.getRecords().size() == 0)
 		{
-			JOptionPane.showMessageDialog(this.getRootPane(), "No data to remove!");
+			JOptionPane.showMessageDialog(this.getRootPane(), NO_DATA_MESSAGE);
 			return;
 		}
 
-		int delete = JOptionPane.showConfirmDialog(this.getRootPane(), "<html>Are you sure you want to clear all data for this tab?<br/>There is no way to undo this action.</html>", "Warning", JOptionPane.YES_NO_OPTION);
+		int delete = JOptionPane.showConfirmDialog(this.getRootPane(), CONFIRM_DELETE_MESSAGE, "Warning", JOptionPane.YES_NO_OPTION);
 		if (delete == JOptionPane.YES_OPTION)
 		{
 			plugin.clearData(boss);

@@ -34,8 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.swing.JPanel;
-import javax.swing.border.EmptyBorder;
-
 import lombok.Getter;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemID;
@@ -45,8 +43,12 @@ import net.runelite.client.plugins.droplogger.data.UniqueItem;
 import net.runelite.client.plugins.droplogger.data.DropEntry;
 import net.runelite.client.plugins.droplogger.data.LootEntry;
 import net.runelite.client.plugins.droplogger.data.LootRecord;
-import net.runelite.client.ui.ColorScheme;
 import net.runelite.http.api.item.ItemPrice;
+
+import static net.runelite.client.plugins.droplogger.ui.Constants.BACKGROUND_COLOR;
+import static net.runelite.client.plugins.droplogger.ui.Constants.CONTENT_BORDER;
+import static net.runelite.client.plugins.droplogger.ui.Constants.KILL_COUNT;
+import static net.runelite.client.plugins.droplogger.ui.Constants.RECORDED_COUNT;
 
 @Getter
 public class LootPanel extends JPanel
@@ -64,8 +66,8 @@ public class LootPanel extends JPanel
 		this.itemManager = itemManager;
 
 		setLayout(new GridBagLayout());
-		setBorder(new EmptyBorder(0, 10, 0, 10));
-		setBackground(ColorScheme.DARK_GRAY_COLOR);
+		setBorder(CONTENT_BORDER);
+		setBackground(BACKGROUND_COLOR);
 
 		createConsolidatedArray();
 		sortUniqueMap();
@@ -171,10 +173,10 @@ public class LootPanel extends JPanel
 		{
 			int amount = this.records.size();
 			LootEntry entry = this.records.get(amount - 1);
-			LootRecordPanel p = new LootRecordPanel("Current Killcount:", entry.getKillCount());
+			LootRecordPanel p = new LootRecordPanel(KILL_COUNT, entry.getKillCount());
 			panel.add(p, c);
 			c.gridy++;
-			LootRecordPanel p2 = new LootRecordPanel("Kills Logged:", amount);
+			LootRecordPanel p2 = new LootRecordPanel(RECORDED_COUNT, amount);
 			panel.add(p2, c);
 			c.gridy++;
 		}
