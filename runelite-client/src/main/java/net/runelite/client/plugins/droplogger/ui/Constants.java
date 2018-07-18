@@ -71,7 +71,6 @@ public class Constants
 	public final static float ALPHA_HAS = 1.0f;
 
 	// Icons for navigation
-	public static final BufferedImage PANEL;
 	public static final BufferedImage BACK;
 	public static final BufferedImage REFRESH;
 	public static final BufferedImage DELETE;
@@ -86,7 +85,6 @@ public class Constants
 		{
 			synchronized (ImageIO.class)
 			{
-				panel = ImageIO.read(DropLoggerPlugin.class.getResourceAsStream("panel_icon.png"));
 				back = ImageIO.read(DropLoggerPlugin.class.getResourceAsStream("back-arrow-white.png"));
 				refresh = ImageIO.read(DropLoggerPlugin.class.getResourceAsStream("refresh-white.png"));
 				delete = ImageIO.read(DropLoggerPlugin.class.getResourceAsStream("delete-white.png"));
@@ -97,7 +95,6 @@ public class Constants
 			throw new RuntimeException(e);
 		}
 
-		PANEL = panel;
 		BACK = back;
 		REFRESH = refresh;
 		DELETE = delete;
