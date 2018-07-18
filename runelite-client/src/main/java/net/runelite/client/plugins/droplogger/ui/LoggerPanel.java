@@ -26,26 +26,18 @@ package net.runelite.client.plugins.droplogger.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.GridLayout;
-import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Set;
 import javax.inject.Inject;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.droplogger.DropLoggerPlugin;
 import net.runelite.client.plugins.droplogger.data.Boss;
@@ -53,14 +45,10 @@ import net.runelite.client.plugins.droplogger.data.UniqueItem;
 import net.runelite.client.plugins.droplogger.data.LootEntry;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.PluginErrorPanel;
-import net.runelite.client.ui.components.materialtabs.MaterialTab;
-import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
 
 import static net.runelite.client.plugins.droplogger.ui.Constants.BACKGROUND_COLOR;
-import static net.runelite.client.plugins.droplogger.ui.Constants.BUTTON_COLOR;
 import static net.runelite.client.plugins.droplogger.ui.Constants.BUTTON_HOVER_COLOR;
 import static net.runelite.client.plugins.droplogger.ui.Constants.CONFIRM_DELETE_MESSAGE;
-import static net.runelite.client.plugins.droplogger.ui.Constants.CONTENT_BORDER;
 import static net.runelite.client.plugins.droplogger.ui.Constants.NO_DATA_MESSAGE;
 import static net.runelite.client.plugins.droplogger.ui.Constants.PLUGIN_DESCRIPTION;
 import static net.runelite.client.plugins.droplogger.ui.Constants.PLUGIN_ERROR_PANEL_BORDER;
@@ -70,7 +58,6 @@ import static net.runelite.client.plugins.droplogger.ui.Constants.TITLE_BORDER;
 import static net.runelite.client.plugins.droplogger.ui.Constants.BACK;
 import static net.runelite.client.plugins.droplogger.ui.Constants.DELETE;
 import static net.runelite.client.plugins.droplogger.ui.Constants.REFRESH;
-import static net.runelite.client.plugins.droplogger.ui.Constants.TOP_BORDER;
 
 
 @Slf4j
@@ -80,12 +67,12 @@ public class LoggerPanel extends PluginPanel
 	private final DropLoggerPlugin plugin;
 
 	// Keep Reference to current LootPanel, needed to clear data
-	private LootPanel lootPanel;
 	private Boss currentTab = null;
 
-	private JPanel content;
 	private JPanel title;
 
+	private LandingPanel landingPanel;
+	private LootPanel lootPanel;
 
 	@Inject
 	public LoggerPanel(DropLoggerPlugin DropLoggerPlugin, ItemManager itemManager)
@@ -97,11 +84,6 @@ public class LoggerPanel extends PluginPanel
 
 		this.setLayout(new BorderLayout());
 		this.setBackground(BACKGROUND_COLOR);
-
-		content = new JPanel();
-		content.setBorder(CONTENT_BORDER);
-		content.setLayout(new GridBagLayout());
-		content.setBackground(BACKGROUND_COLOR);
 
 		title = new JPanel();
 		title.setBorder(TITLE_BORDER);
@@ -119,7 +101,6 @@ public class LoggerPanel extends PluginPanel
 		// Clear the current content containers
 		this.removeAll();
 		title.removeAll();
-		content.removeAll();
 
 		// Title Element
 		PluginErrorPanel header = new PluginErrorPanel();
@@ -128,92 +109,11 @@ public class LoggerPanel extends PluginPanel
 		title.add(header);
 
 		// Content Element
-		GridBagConstraints c = new GridBagConstraints();
-		c.fill = GridBagConstraints.HORIZONTAL;
-		c.anchor = GridBagConstraints.NORTHWEST;
-		c.weightx = 1;
-		c.weighty = 0;
-		c.gridx = 0;
-		c.gridy = 0;
-
-		// Add the Boss selection elements by category
-		Set<String> categories = Boss.categories;
-		for (String categoryName : categories)
-		{
-			// Category Name
-			JLabel name = new JLabel(categoryName);
-			name.setBorder(TOP_BORDER);
-			name.setForeground(Color.WHITE);
-			name.setVerticalAlignment(SwingConstants.CENTER);
-
-			MaterialTabGroup icons = createTabCategory(categoryName);
-
-			content.add(name, c);
-			c.gridy++;
-			content.add(icons, c);
-			c.gridy++;
-		}
+		landingPanel = new LandingPanel(this, itemManager);
 
 		// Re-add containers to the page.
 		this.add(title, BorderLayout.NORTH);
-		this.add(wrapContainer(content), BorderLayout.CENTER);
-	}
-
-	// Creates icons used for tab selection for a specific category
-	private MaterialTabGroup createTabCategory(String categoryName)
-	{
-		MaterialTabGroup thisTabGroup = new MaterialTabGroup();
-		thisTabGroup.setLayout(new GridLayout(0, 4, 7, 7));
-		thisTabGroup.setBorder(TOP_BORDER);
-
-		ArrayList<Boss> categoryBosses = Boss.getByCategoryName(categoryName);
-		for (Boss boss : categoryBosses)
-		{
-			// Create tab (with hover effects/text)
-			MaterialTab materialTab = new MaterialTab("", thisTabGroup, null);
-			materialTab.setName(boss.getName());
-			materialTab.setToolTipText(boss.getBossName());
-			materialTab.addMouseListener(new MouseAdapter()
-			{
-				@Override
-				public void mouseEntered(MouseEvent e)
-				{
-					materialTab.setBackground(BUTTON_HOVER_COLOR);
-				}
-
-				@Override
-				public void mouseExited(MouseEvent e)
-				{
-					materialTab.setBackground(BUTTON_COLOR);
-				}
-			});
-
-			// Attach Icon to the Tab
-			AsyncBufferedImage image = itemManager.getImage(boss.getItemID());
-			Runnable resize = () ->
-			{
-				materialTab.setIcon(new ImageIcon(image.getScaledInstance(35, 35, Image.SCALE_SMOOTH)));
-				materialTab.setOpaque(true);
-				materialTab.setBackground(BUTTON_COLOR);
-				materialTab.setHorizontalAlignment(SwingConstants.CENTER);
-				materialTab.setVerticalAlignment(SwingConstants.CENTER);
-				materialTab.setPreferredSize(new Dimension(35, 35));
-			};
-			image.onChanged(resize);
-			resize.run();
-
-			materialTab.setOnSelectEvent(() ->
-			{
-				this.showTabDisplay(boss);
-				materialTab.unselect();
-				materialTab.setBackground(BACKGROUND_COLOR);
-				return true;
-			});
-
-			thisTabGroup.addTab(materialTab);
-		}
-
-		return thisTabGroup;
+		this.add(wrapContainer(landingPanel), BorderLayout.CENTER);
 	}
 
 	// Landing page (Boss Selection Screen)
@@ -224,7 +124,6 @@ public class LoggerPanel extends PluginPanel
 		// Clear all Data
 		this.removeAll();
 		title.removeAll();
-		content.removeAll();
 
 		// Tile Update
 		title = createLootPanelTitle(title, boss.getBossName());
@@ -334,7 +233,7 @@ public class LoggerPanel extends PluginPanel
 		return container;
 	}
 
-	private void showTabDisplay(Boss boss)
+	void showTabDisplay(Boss boss)
 	{
 		createTabPanel(boss);
 
