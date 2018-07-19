@@ -167,7 +167,7 @@ public class LandingPanel extends JPanel
 
 			materialTab.setOnSelectEvent(() ->
 			{
-				parent.showTabDisplay(boss);
+				parent.showTabDisplay(boss.getBossName());
 				materialTab.unselect();
 				materialTab.setBackground(BACKGROUND_COLOR);
 				return true;

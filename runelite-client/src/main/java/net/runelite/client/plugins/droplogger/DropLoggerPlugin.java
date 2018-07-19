@@ -43,7 +43,6 @@ import net.runelite.api.Client;
 import net.runelite.api.Item;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.ConfigChanged;
-import net.runelite.api.events.GameTick;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetID;
@@ -186,25 +185,25 @@ public class DropLoggerPlugin extends Plugin
 		updateMessageColor();
 	}
 
-	public void loadTabData(Boss tab)
+	public void loadTabData(String name)
 	{
-		loadLootEntries(tab);
+		loadLootEntries(name);
 	}
 
 	// Load data for all bosses being recorded
 	private void loadAllData()
 	{
-		for (Boss tab : Boss.values())
+		for (Boss boss : Boss.values())
 		{
-			loadLootEntries(tab);
+			loadLootEntries(boss.getBossName());
 		}
 	}
 
 	// Returns stored data by tab
-	public ArrayList<LootEntry> getData(Boss tab)
+	public ArrayList<LootEntry> getData(String name)
 	{
 		// Loot Entries are stored on lootMap by boss name (upper cased)
-		return lootMap.get(tab);
+		return lootMap.get(name.toUpperCase());
 	}
 
 	private Item handlePet(String name)
@@ -249,7 +248,7 @@ public class DropLoggerPlugin extends Plugin
 			// Reset stored data
 			for (Boss boss : Boss.values())
 			{
-				lootMap.put(boss, new ArrayList<>());
+				lootMap.put(boss.getBossName().toUpperCase(), new ArrayList<>());
 			}
 		}
 	}
@@ -289,75 +288,71 @@ public class DropLoggerPlugin extends Plugin
 	}
 
 	// Wrapper for writer.addLootEntry
-	private void addLootEntry(String bossName, LootEntry entry)
+	private void addLootEntry(String name, LootEntry entry)
 	{
 		updatePlayerFolder();
-
-		Boss boss = Boss.getByBossName(bossName);
-		if (boss == null)
-		{
-			log.debug("Cant find tab for boss: {}", bossName);
-			return;
-		}
+		name = name.toUpperCase();
 
 		// Update data inside plugin
-		ArrayList<LootEntry> loots = lootMap.get(boss);
+		ArrayList<LootEntry> loots = lootMap.get(name);
 		loots.add(entry);
-		lootMap.put(boss, loots);
+		lootMap.put(name, loots);
 
-		boolean success = writer.addLootEntry(boss, entry);
+		boolean success = writer.addLootEntry(name, entry);
 
 		if (!success)
 		{
-			log.debug("Couldn't add entry to tab. (tab: {} | entry: {})", boss, entry);
+			log.debug("Couldn't add entry to log file. (Name: {} | entry: {})", name, entry);
 		}
 	}
 
 	// Receive Loot from the necessary file
-	private synchronized void loadLootEntries(Boss boss)
+	private synchronized void loadLootEntries(String name)
 	{
 		updatePlayerFolder();
+		name = name.toUpperCase();
 
-		ArrayList<LootEntry> data = writer.loadLootEntries(boss);
+		ArrayList<LootEntry> data = writer.loadLootEntries(name);
 
 		if (data == null)
 		{
-			log.debug("Couldn't find local data for boss: {}", boss);
-			lootMap.put(boss, new ArrayList<>());
+			log.debug("Couldn't find log file for: {}", name);
+			lootMap.put(name, new ArrayList<>());
 			return;
 		}
 
 		// Update Loot Map with new data
-		lootMap.put(boss, data);
+		lootMap.put(name, data);
 
 		// Update Killcount map with latest value
 		if (data.size() > 0)
 		{
 			int killcount = data.get(data.size() - 1).getKillCount();
-			killcountMap.put(boss.getBossName().toUpperCase(), killcount);
+			killcountMap.put(name, killcount);
 		}
 	}
 
 	// Add Loot Entry to the necessary file
-	private void addDropToLastLootEntry(Boss boss, Item newDrop)
+	private void addDropToLastLootEntry(String name, Item newDrop)
 	{
 		// Update data inside plugin
-		ArrayList<LootEntry> loots = lootMap.get(boss);
+		name = name.toUpperCase();
+		ArrayList<LootEntry> loots = lootMap.get(name);
 		LootEntry entry = loots.get(loots.size() - 1);
 		entry.addDropItem(newDrop);
 		// Ensure updates are applied, may not be necessary
 		loots.add(loots.size() - 1, entry);
-		lootMap.put(boss, loots);
+		lootMap.put(name, loots);
 
 		updatePlayerFolder();
 
-		rewriteLootFile(boss, loots);
+		rewriteLootFile(name, loots);
 	}
 
 	// Wrapper for writer.rewriteLootFile
-	private void rewriteLootFile(Boss boss, ArrayList<LootEntry> loots)
+	private void rewriteLootFile(String name, ArrayList<LootEntry> loots)
 	{
-		boolean success = writer.rewriteLootFile(boss, loots);
+		boolean success = writer.rewriteLootFile(name, loots);
 		if (!success)
 		{
 			log.debug("Couldn't add drop to last loot entry");
@@ -369,14 +364,15 @@ public class DropLoggerPlugin extends Plugin
 	{
 		Item drop = client.createItem(itemID, 1);
 		// Update the last drop
-		addDropToLastLootEntry(Boss.ABYSSAL_SIRE, drop);
+		addDropToLastLootEntry(Boss.ABYSSAL_SIRE.getBossName(), drop);
 	}
 
 	// Clear stored data for specific boss
-	public void clearData(Boss boss)
+	public void clearData(String name)
 	{
-		log.debug("Clearing data for boss: " + boss.getName());
-		writer.clearLootFile(boss);
+		name = name.toUpperCase();
+		log.debug("Clearing data for NPCs: " + name);
+		writer.clearLootFile(name);
 	}
 
 	// Updates in-game alert chat color based on config settings
@@ -430,6 +426,8 @@ public class DropLoggerPlugin extends Plugin
 	{
 		log.info("NPC loot Received: {}", e);
 
+		String name = e.getComposition().getName();
+
 		// Certain NPCs we care about their kill count.
 		WatchNpcs watchList = WatchNpcs.getByNpcId(e.getNpcId());
 		LootEntry lootEntry = null;
@@ -443,8 +441,9 @@ public class DropLoggerPlugin extends Plugin
 			}
 			else
 			{
-				int KC = killcountMap.get(boss.getBossName().toUpperCase());
-				lootEntry = new LootEntry(e.getNpcId(), e.getComposition().getName(), KC, e.getItems());
+				name = boss.getBossName().toUpperCase();
+				int KC = killcountMap.get(name);
+				lootEntry = new LootEntry(name, KC, e.getItems());
 			}
 		}
 
@@ -455,7 +454,7 @@ public class DropLoggerPlugin extends Plugin
 		}
 
 		// Add the loot to the file
-		AddLootEntry(boss, e.getItems());
+		addLootEntry(name, lootEntry);
 	}
 
 	// Check for Unsired loot reclaiming

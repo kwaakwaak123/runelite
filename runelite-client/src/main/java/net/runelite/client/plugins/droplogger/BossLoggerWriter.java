@@ -46,11 +46,11 @@ class BossLoggerWriter
 {
 	private File playerFolder;
 
-	private Map<Boss, String> filenameMap;
+	private Map<String, String> filenameMap;
 
 	private Client client;
 
-	BossLoggerWriter(Client client, Map<Boss, String> filenameMap)
+	BossLoggerWriter(Client client, Map<String, String> filenameMap)
 	{
 		// Ensure Loot Directory has been created
 		LOOTS_DIR.mkdir();
@@ -90,12 +90,12 @@ class BossLoggerWriter
 	 */
 
 	// Add Loot Entry to the necessary file
-	boolean addLootEntry(Boss tab, LootEntry entry)
+	boolean addLootEntry(String name, LootEntry entry)
 	{
 		// Convert entry to JSON
 		String dataAsString = RuneLiteAPI.GSON.toJson(entry);
 
-		String fileName = filenameMap.get(tab);
+		String fileName = filenameMap.get(name);
 
 		// Open File and append data
 		File lootFile = new File(playerFolder, fileName);
@@ -115,9 +115,9 @@ class BossLoggerWriter
 	}
 
 	// Mostly used to adjust previous loot entries (adding pet drops)
-	boolean rewriteLootFile(Boss tab, ArrayList<LootEntry> loots)
+	boolean rewriteLootFile(String name, ArrayList<LootEntry> loots)
 	{
-		String fileName = filenameMap.get(tab);
+		String fileName = filenameMap.get(name);
 
 		// Rewrite the log file (to update the last loot entry)
 		File lootFile = new File(playerFolder, fileName);
@@ -147,9 +147,9 @@ class BossLoggerWriter
 	 */
 
 	// Delete loot file
-	synchronized boolean clearLootFile(Boss tab)
+	synchronized boolean clearLootFile(String name)
 	{
-		String fileName = filenameMap.get(tab);
+		String fileName = filenameMap.get(name);
 		File lootFile = new File(playerFolder, fileName);
 
 		if (lootFile.delete())
@@ -169,11 +169,11 @@ class BossLoggerWriter
 	 */
 
 	// Retrieve Loot for this tab from the necessary file
-	synchronized ArrayList<LootEntry> loadLootEntries(Boss tab)
+	synchronized ArrayList<LootEntry> loadLootEntries(String name)
 	{
 		ArrayList<LootEntry> data = new ArrayList<>();
 
-		String fileName = filenameMap.get(tab);
+		String fileName = filenameMap.get(name);
 
 		// Open File and read line by line
 		File file = new File(playerFolder, fileName);
@@ -194,7 +194,7 @@ class BossLoggerWriter
 		}
 		catch (FileNotFoundException e)
 		{
-			log.debug("File not found: " + fileName);
+			log.debug("File not found: {}", fileName);
 			return null;
 		}
 		catch (IOException e)

@@ -41,7 +41,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.droplogger.DropLoggerPlugin;
-import net.runelite.client.plugins.droplogger.data.Boss;
 import net.runelite.client.plugins.droplogger.data.UniqueItem;
 import net.runelite.client.plugins.droplogger.data.LootEntry;
 import net.runelite.client.ui.PluginPanel;
@@ -69,7 +68,7 @@ public class LoggerPanel extends PluginPanel
 	private final DropLoggerPlugin plugin;
 
 	// Keep Reference to current LootPanel, needed to clear data
-	private Boss currentTab = null;
+	private String currentTab = null;	// NPC Name
 
 	private JPanel title;
 	private JPanel footer;
@@ -125,26 +124,26 @@ public class LoggerPanel extends PluginPanel
 	}
 
 	// Landing page (Boss Selection Screen)
-	private void createTabPanel(Boss boss)
+	private void createTabPanel(String name)
 	{
-		currentTab = boss;
+		currentTab = name;
 
 		// Clear all Data
 		this.removeAll();
 		title.removeAll();
 
 		// Tile Update
-		title = createLootPanelTitle(title, boss.getBossName());
+		title = createLootPanelTitle(title, name);
 
 
 		// Content Update
 		// Ensure stored data is up to date with file.
-		plugin.loadTabData(boss);
+		plugin.loadTabData(name);
 		// Grab Data to display from plugin
-		ArrayList<LootEntry> data = plugin.getData(boss);
+		ArrayList<LootEntry> data = plugin.getData(name);
 
 		// Do we have any unique items to track?
-		ArrayList<UniqueItem> list = UniqueItem.getByActivityName(boss.getName());
+		ArrayList<UniqueItem> list = UniqueItem.getByActivityName(name);
 		// Sort the list by requested position inside UI (negative->positive)
 		Map<Integer, ArrayList<UniqueItem>> sets = UniqueItem.createPositionSetMap(list);
 
@@ -241,9 +240,9 @@ public class LoggerPanel extends PluginPanel
 		return container;
 	}
 
-	void showTabDisplay(Boss boss)
+	void showTabDisplay(String name)
 	{
-		createTabPanel(boss);
+		createTabPanel(name);
 
 		this.revalidate();
 		this.repaint();
@@ -273,20 +272,20 @@ public class LoggerPanel extends PluginPanel
 	}
 
 	// Refresh the Loot Panel with updated data (requests the data from file)
-	private void refreshLootPanel(LootPanel lootPanel, Boss boss)
+	private void refreshLootPanel(LootPanel lootPanel, String name)
 	{
 		// Refresh data for necessary tab
-		plugin.loadTabData(boss);
+		plugin.loadTabData(name);
 
 		// Recreate the loot panel
-		lootPanel.updateRecords(plugin.getData(boss));
+		lootPanel.updateRecords(plugin.getData(name));
 
 		// Ensure changes are applied
 		this.revalidate();
 		this.repaint();
 	}
 
-	private void clearData(Boss boss)
+	private void clearData(String name)
 	{
 		if (lootPanel.getRecords().size() == 0)
 		{
@@ -297,9 +296,9 @@ public class LoggerPanel extends PluginPanel
 		int delete = JOptionPane.showConfirmDialog(this.getRootPane(), CONFIRM_DELETE_MESSAGE, "Warning", JOptionPane.YES_NO_OPTION);
 		if (delete == JOptionPane.YES_OPTION)
 		{
-			plugin.clearData(boss);
+			plugin.clearData(name);
 			// Refresh current panel
-			refreshLootPanel(lootPanel, boss);
+			refreshLootPanel(lootPanel, name);
 		}
 	}
 }
