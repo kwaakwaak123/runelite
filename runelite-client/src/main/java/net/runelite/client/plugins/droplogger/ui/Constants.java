@@ -76,7 +76,6 @@ public class Constants
 	public static final BufferedImage DELETE;
 	static
 	{
-		BufferedImage panel;
 		BufferedImage back;
 		BufferedImage refresh;
 		BufferedImage delete;

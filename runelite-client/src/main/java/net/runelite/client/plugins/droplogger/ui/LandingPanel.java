@@ -27,16 +27,13 @@ package net.runelite.client.plugins.droplogger.ui;
 import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.droplogger.data.Boss;
-import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.ui.components.RuneliteList;
-import net.runelite.client.ui.components.RuneliteListItemRenderer;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
 import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
-import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
@@ -46,8 +43,8 @@ import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import static net.runelite.client.plugins.droplogger.ui.Constants.BACKGROUND_COLOR;
 import static net.runelite.client.plugins.droplogger.ui.Constants.BUTTON_COLOR;
@@ -59,9 +56,9 @@ public class LandingPanel extends JPanel
 {
 	private final LoggerPanel parent;
 	private final ItemManager itemManager;
-	private final RuneliteList eventList;
+	private JPanel eventList;
 
-	LandingPanel(LoggerPanel parent, ItemManager itemManager)
+	LandingPanel(Set<String> sessionActors, LoggerPanel parent, ItemManager itemManager)
 	{
 		this.parent = parent;
 		this.itemManager = itemManager;
@@ -80,7 +77,7 @@ public class LandingPanel extends JPanel
 		c.gridy = 0;
 
 		// All NPCs killed this Session
-		this.eventList = createSessionEventList(new ArrayList<String>());
+		this.eventList = createSessionEventList(sessionActors);
 		this.add(eventList, c);
 		c.gridy++;
 
@@ -103,23 +100,48 @@ public class LandingPanel extends JPanel
 		}
 	}
 
-	private RuneliteList createSessionEventList(List<String> options)
+	private JPanel createSessionEventList(Set<String> options)
 	{
-		// Create the list of NPCs for this session
-		RuneliteList eventList = new RuneliteList();
-		eventList.setCellRenderer(new RuneliteListItemRenderer());
-		eventList.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		DefaultListModel listModel = new DefaultListModel<>();
-		eventList.setModel(listModel);
+		JPanel container = new JPanel();
+		container.setLayout(new GridBagLayout());
 
-		int index = 0;
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.anchor = GridBagConstraints.NORTHWEST;
+		c.weightx = 1;
+		c.weighty = 0;
+		c.gridx = 0;
+		c.gridy = 0;
+
+
 		for (String s : options)
 		{
-			listModel.add(index, s);
-			index++;
+			JLabel l = new JLabel(s);
+			l.addMouseListener(new MouseAdapter()
+			{
+				@Override
+				public void mouseEntered(MouseEvent e)
+				{
+					l.setBackground(BUTTON_COLOR);
+				}
+
+				@Override
+				public void mouseExited(MouseEvent e)
+				{
+					l.setBackground(BUTTON_HOVER_COLOR);
+				}
+
+				@Override
+				public void mouseClicked(MouseEvent e)
+				{
+					parent.showTabDisplay(s);
+				}
+			});
+			this.add(l, c);
+			c.gridy++;
 		}
 
-		return eventList;
+		return container;
 	}
 
 	// Creates icons used for tab selection for a specific category
@@ -177,5 +199,20 @@ public class LandingPanel extends JPanel
 		}
 
 		return thisTabGroup;
+	}
+
+	void setSessionActors(TreeSet<String> sessionActors)
+	{
+
+		SwingUtilities.invokeLater(() ->
+		{
+			this.eventList = createSessionEventList(sessionActors);
+
+			this.eventList.repaint();
+			this.eventList.revalidate();
+
+			this.repaint();
+			this.revalidate();
+		});
 	}
 }

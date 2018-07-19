@@ -30,8 +30,8 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
@@ -60,7 +60,6 @@ import net.runelite.client.game.loot.events.PlayerLootReceived;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.droplogger.data.Boss;
-import net.runelite.client.plugins.droplogger.data.DropEntry;
 import net.runelite.client.plugins.droplogger.data.LootEntry;
 import net.runelite.client.plugins.droplogger.data.Pet;
 import net.runelite.client.plugins.droplogger.data.WatchNpcs;
@@ -117,6 +116,9 @@ public class DropLoggerPlugin extends Plugin
 	private Map<String, ArrayList<LootEntry>> lootMap = new HashMap<>(); // Store loot entries for each NPC/Boss name
 	private Map<String, String> filenameMap = new HashMap<>(); 			 // Stores filename for each NPC/Boss name
 	private Map<String, Integer> killcountMap = new HashMap<>(); 		 // Store kill count by name
+
+	@Getter
+	private TreeSet<String> sessionActors = new TreeSet<>();
 
 	@Provides
 	DropLoggerConfig provideConfig(ConfigManager configManager)
@@ -189,15 +191,6 @@ public class DropLoggerPlugin extends Plugin
 	public void loadTabData(String name)
 	{
 		loadLootEntries(name);
-	}
-
-	// Load data for all bosses being recorded
-	private void loadAllData()
-	{
-		for (Boss boss : Boss.values())
-		{
-			loadLootEntries(boss.getBossName());
-		}
 	}
 
 	// Returns stored data by tab
@@ -275,17 +268,6 @@ public class DropLoggerPlugin extends Plugin
 		{
 			notifier.notify(message);
 		}
-	}
-
-	// Adds the data to the correct boss log file
-	private void AddBossLootEntry(String bossName, List<Item> drops)
-	{
-		int KC = killcountMap.get(bossName.toUpperCase());
-		LootEntry newEntry = new LootEntry(KC, drops);
-		if (gotPet)
-			newEntry.addDropItem(handlePet(bossName));
-		addLootEntry(bossName, newEntry);
-		dropLoggedAlert(bossName + " kill added to log.");
 	}
 
 	// Wrapper for writer.addLootEntry
@@ -459,9 +441,13 @@ public class DropLoggerPlugin extends Plugin
 				name = boss.getBossName().toUpperCase();
 				int KC = killcountMap.get(name);
 				lootEntry = new LootEntry(name, KC, e.getItems());
+
+				if (gotPet)
+				{
+					lootEntry.addDropItem(handlePet(name));
+				}
 			}
 		}
-
 
 		if (lootEntry == null)
 		{
@@ -470,6 +456,18 @@ public class DropLoggerPlugin extends Plugin
 
 		// Add the loot to the file
 		addLootEntry(name, lootEntry);
+		addNewSessionActor(name);
+	}
+
+	private void addNewSessionActor(String name)
+	{
+		int old = sessionActors.size();
+		sessionActors.add(name);
+		if (old < sessionActors.size())
+		{
+			// New SessionActor, refresh landing page.
+			panel.newSessionActor(sessionActors);
+		}
 	}
 
 	// Check for Unsired loot reclaiming

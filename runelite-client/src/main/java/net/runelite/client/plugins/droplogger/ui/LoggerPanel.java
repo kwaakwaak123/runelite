@@ -31,6 +31,8 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import javax.inject.Inject;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
@@ -116,7 +118,7 @@ public class LoggerPanel extends PluginPanel
 		title.add(header);
 
 		// Content Element
-		landingPanel = new LandingPanel(this, itemManager);
+		landingPanel = new LandingPanel(plugin.getSessionActors(), this, itemManager);
 
 		// Re-add containers to the page.
 		this.add(title, BorderLayout.NORTH);
@@ -299,6 +301,14 @@ public class LoggerPanel extends PluginPanel
 			plugin.clearData(name);
 			// Refresh current panel
 			refreshLootPanel(lootPanel, name);
+		}
+	}
+
+	public void newSessionActor(TreeSet<String> sessionActors)
+	{
+		if (currentTab == null)
+		{
+			landingPanel.setSessionActors(sessionActors);
 		}
 	}
 }
