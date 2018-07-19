@@ -26,7 +26,6 @@ package net.runelite.client.plugins.droplogger;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
-import net.runelite.client.plugins.droplogger.data.Boss;
 import net.runelite.client.plugins.droplogger.data.LootEntry;
 import net.runelite.http.api.RuneLiteAPI;
 import java.io.BufferedReader;
@@ -61,7 +60,10 @@ class BossLoggerWriter
 		updatePlayerFolder();
 	}
 
-	// Logs should be stored under: `.runelite/loots/*username*/`
+	/**
+	 * Ensure we are referencing the right folder for the current Player
+	 * @return Folder Directory Changed?
+	 */
 	boolean updatePlayerFolder()
 	{
 		String old = "";
@@ -85,17 +87,18 @@ class BossLoggerWriter
 		return !playerFolder.toString().equals(old);
 	}
 
-	/*
-	 * File Writing
+	/**
+	 * Adds the LootEntry to the requested .log file
+	 * @param name Npc/Event/Boss Name
+	 * @param entry LootEntry to add
+	 * @return Success Boolean
 	 */
-
-	// Add Loot Entry to the necessary file
 	boolean addLootEntry(String name, LootEntry entry)
 	{
 		// Convert entry to JSON
 		String dataAsString = RuneLiteAPI.GSON.toJson(entry);
 
-		String fileName = filenameMap.get(name);
+		String fileName = getFileNameFromMap(name);
 
 		// Open File and append data
 		File lootFile = new File(playerFolder, fileName);
@@ -114,10 +117,15 @@ class BossLoggerWriter
 		}
 	}
 
-	// Mostly used to adjust previous loot entries (adding pet drops)
+	/**
+	 * Rewrites the Entire .log file, useful for updating previous entries.
+	 * @param name Npc/Event/Boss Name
+	 * @param loots List of records to write
+	 * @return Success Boolean
+	 */
 	boolean rewriteLootFile(String name, ArrayList<LootEntry> loots)
 	{
-		String fileName = filenameMap.get(name);
+		String fileName = getFileNameFromMap(name);
 
 		// Rewrite the log file (to update the last loot entry)
 		File lootFile = new File(playerFolder, fileName);
@@ -142,14 +150,14 @@ class BossLoggerWriter
 		}
 	}
 
-	/*
-	 * File Deletion
+	/**
+	 * Deletes the requested file.
+	 * @param name Npc/Event/Boss Name
+	 * @return Success Boolean
 	 */
-
-	// Delete loot file
 	synchronized boolean clearLootFile(String name)
 	{
-		String fileName = filenameMap.get(name);
+		String fileName = getFileNameFromMap(name);
 		File lootFile = new File(playerFolder, fileName);
 
 		if (lootFile.delete())
@@ -164,16 +172,16 @@ class BossLoggerWriter
 		}
 	}
 
-	/*
-	 * File Retrieval
+	/**
+	 * Load LootEntry's from the respective .log file.
+	 * @param name Npc/Event/Boss Name
+	 * @return ArrayList of LootEntry
 	 */
-
-	// Retrieve Loot for this tab from the necessary file
 	synchronized ArrayList<LootEntry> loadLootEntries(String name)
 	{
 		ArrayList<LootEntry> data = new ArrayList<>();
 
-		String fileName = filenameMap.get(name);
+		String fileName = getFileNameFromMap(name);
 
 		// Open File and read line by line
 		File file = new File(playerFolder, fileName);
@@ -202,5 +210,22 @@ class BossLoggerWriter
 			log.warn("Unexpected error: {}", e.getMessage());
 			return null;
 		}
+	}
+
+	/**
+	 * Retrieve filename from the map or create one if it doesn't exist.
+	 * @param name Npc/Event/Boss Name to check for/use as a template.
+	 * @return Filename from the map.
+	 */
+	private String getFileNameFromMap(String name)
+	{
+		String fileName = filenameMap.get(name);
+		if (fileName == null)
+		{
+			String newFileName = name.toLowerCase().replaceAll("( |'|\\.)", "").toLowerCase() + ".log";
+			filenameMap.put(name, newFileName);
+			return newFileName;
+		}
+		return fileName;
 	}
 }

@@ -60,6 +60,7 @@ import net.runelite.client.game.loot.events.PlayerLootReceived;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.droplogger.data.Boss;
+import net.runelite.client.plugins.droplogger.data.DropEntry;
 import net.runelite.client.plugins.droplogger.data.LootEntry;
 import net.runelite.client.plugins.droplogger.data.Pet;
 import net.runelite.client.plugins.droplogger.data.WatchNpcs;
@@ -295,6 +296,10 @@ public class DropLoggerPlugin extends Plugin
 
 		// Update data inside plugin
 		ArrayList<LootEntry> loots = lootMap.get(name);
+		if (loots == null)
+		{
+			loots = new ArrayList<>();
+		}
 		loots.add(entry);
 		lootMap.put(name, loots);
 
@@ -336,17 +341,27 @@ public class DropLoggerPlugin extends Plugin
 	private void addDropToLastLootEntry(String name, Item newDrop)
 	{
 		// Update data inside plugin
-		name = name.toUpperCase();
-		ArrayList<LootEntry> loots = lootMap.get(name);
-		LootEntry entry = loots.get(loots.size() - 1);
-		entry.addDropItem(newDrop);
-		// Ensure updates are applied, may not be necessary
-		loots.add(loots.size() - 1, entry);
-		lootMap.put(name, loots);
+		String nameCased = name.toUpperCase();
+		ArrayList<LootEntry> loots = lootMap.get(nameCased);
+		if (loots == null || loots.size() == 0)
+		{
+			LootEntry entry = new LootEntry(name, -1, new ArrayList<Item>());
+			entry.addDropItem(newDrop);
+			loots = new ArrayList<>();
+			loots.add(entry);
+		}
+		else
+		{
+			LootEntry entry = loots.get(loots.size() - 1);
+			entry.addDropItem(newDrop);
+			loots.add(loots.size() - 1, entry);
+		}
+		// Ensure updates is applied, may not be necessary
+		lootMap.put(nameCased, loots);
 
 		updatePlayerFolder();
 
-		rewriteLootFile(name, loots);
+		rewriteLootFile(nameCased, loots);
 	}
 
 	// Wrapper for writer.rewriteLootFile
