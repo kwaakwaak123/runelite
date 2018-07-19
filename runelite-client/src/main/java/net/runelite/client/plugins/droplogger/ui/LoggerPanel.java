@@ -73,6 +73,7 @@ public class LoggerPanel extends PluginPanel
 	private Boss currentTab = null;
 
 	private JPanel title;
+	private JPanel footer;
 
 	private LandingPanel landingPanel;
 	private LootPanel lootPanel;
@@ -93,6 +94,11 @@ public class LoggerPanel extends PluginPanel
 		title.setBorder(TITLE_BORDER);
 		title.setLayout(new BorderLayout());
 		title.setBackground(BACKGROUND_COLOR);
+
+		footer = new JPanel();
+		footer.setBorder(TITLE_BORDER);
+		footer.setLayout(new BorderLayout());
+		footer.setBackground(BACKGROUND_COLOR);
 
 		createLandingPanel();
 	}
@@ -163,12 +169,13 @@ public class LoggerPanel extends PluginPanel
 		// Tile Update
 		title = createLootPanelTitle(title, "Session Data");
 
-
 		// Content Update
 		sessionPanel = new SessionPanel(this, data);
+		footer = sessionPanel.getFooter();
 
 		this.add(title, BorderLayout.NORTH);
 		this.add(wrapContainer(sessionPanel), BorderLayout.CENTER);
+		this.add(footer, BorderLayout.SOUTH);
 	}
 
 	// Icon Label with Hover effects

@@ -25,6 +25,7 @@
  */
 package net.runelite.client.plugins.droplogger.ui;
 
+import lombok.Getter;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemID;
 import net.runelite.client.plugins.droplogger.data.EventOccurrenceCollection;
@@ -82,6 +83,9 @@ public class SessionPanel extends JPanel
 	private SessionLogData logData;
 	private SessionLogsFilter filter;
 
+	@Getter
+	private JPanel footer;
+
 	private JPanel sessionDropsPanel;
 	private JList npcList;
 	private DefaultListModel npcListModel;
@@ -106,6 +110,11 @@ public class SessionPanel extends JPanel
 		updateLogIconTable(sessionDropsPanel, null, null);
 		this.add(dropsScrollPane, BorderLayout.CENTER);
 
+		createFooter();
+	}
+
+	private void createFooter()
+	{
 		JPanel filterContainer = new JPanel(new GridBagLayout());
 		filterContainer.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		filterContainer.setVisible(false);
@@ -255,7 +264,7 @@ public class SessionPanel extends JPanel
 		typeComboBox.setSelectedIndex(2);
 		areaComboBox.setSelectedIndex(2);
 
-		this.add(configPanel, BorderLayout.SOUTH);
+		footer = configPanel;
 	}
 
 	public void onLogShouldUpdate()
@@ -329,38 +338,21 @@ public class SessionPanel extends JPanel
 				.sorted((a, b) -> (int)(b.getValue().getValue() - a.getValue().getValue()))
 				.map(Map.Entry::getValue).collect(Collectors.toList());
 
+
+		for (LoggedItem item : itemList)
+		{
+			item.setImage(parent.getItemManager().getImage(item.getItemId(),
+					item.getQuantity(), item.getQuantity() != 1 || item.getComposition().isStackable()));
+		}
+
 		SwingUtilities.invokeLater(() ->
 		{
-			for (LoggedItem item : itemList)
-			{
-				item.setImage(parent.getItemManager().getImage(item.getItemId(),
-						item.getQuantity(), item.getQuantity() != 1 || item.getComposition().isStackable()));
-			}
+			this.updateLogIconTable(sessionDropsPanel, eventList, itemList);
 
-			SwingUtilities.invokeLater(() ->
-			{
-				// Useful code for testing the panel with many items, uncomment if you want to test it
-				/*List<LoggedItem> l = new ArrayList<>();
-				for (int i = 0; i < 100; i++)
-				{
-					int itemId = 995;
-					LoggedItem item = new LoggedItem(itemId, 10000, parent.getItemManager().getItemComposition(itemId), 1);
-					item.setImage(parent.getItemManager().getImage(itemId, 10000, true));
-					l.add(item);
-				}
-				updateLogIconTable(sessionDropsPanel, eventList, l);*/
-
-				updateLogIconTable(sessionDropsPanel, eventList, itemList);
-				this.parent.repaint();
-			});
+			this.parent.repaint();
+			this.parent.revalidate();
 		});
 	}
-
-
-
-
-
-
 
 
 

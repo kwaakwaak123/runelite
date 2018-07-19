@@ -52,7 +52,17 @@ public class RuneliteListItemRenderer extends JLabel implements ListCellRenderer
 		}
 		if (list.getHoveredIndex() == index)
 		{
-			setForeground(Color.WHITE);
+			if (!isSelected)
+			{
+				setForeground(Color.WHITE);
+				setBackground(ColorScheme.DARKER_GRAY_COLOR);
+				setOpaque(true);
+			}
+			else
+			{
+				setBackground(ColorScheme.BRAND_ORANGE);
+				setOpaque(true);
+			}
 		}
 
 		setBorder(new EmptyBorder(1, 4, 1, 4));
