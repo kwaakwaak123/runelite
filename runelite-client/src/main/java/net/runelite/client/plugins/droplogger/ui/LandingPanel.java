@@ -27,10 +27,13 @@ package net.runelite.client.plugins.droplogger.ui;
 import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.droplogger.data.Boss;
+import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.components.RuneliteList;
+import net.runelite.client.ui.components.RuneliteListItemRenderer;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
 import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
+import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -43,6 +46,7 @@ import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import static net.runelite.client.plugins.droplogger.ui.Constants.BACKGROUND_COLOR;
@@ -55,6 +59,7 @@ public class LandingPanel extends JPanel
 {
 	private final LoggerPanel parent;
 	private final ItemManager itemManager;
+	private final RuneliteList eventList;
 
 	LandingPanel(LoggerPanel parent, ItemManager itemManager)
 	{
@@ -74,11 +79,9 @@ public class LandingPanel extends JPanel
 		c.gridx = 0;
 		c.gridy = 0;
 
-
-		JButton sessionButton = new JButton("Current Session");
-		sessionButton.setFocusable(false);
-		sessionButton.addActionListener(e -> parent.showSessionPage());
-		this.add(sessionButton, c);
+		// All NPCs killed this Session
+		this.eventList = createSessionEventList(new ArrayList<String>());
+		this.add(eventList, c);
 		c.gridy++;
 
 		// Add the Boss selection elements by category
@@ -98,6 +101,25 @@ public class LandingPanel extends JPanel
 			this.add(icons, c);
 			c.gridy++;
 		}
+	}
+
+	private RuneliteList createSessionEventList(List<String> options)
+	{
+		// Create the list of NPCs for this session
+		RuneliteList eventList = new RuneliteList();
+		eventList.setCellRenderer(new RuneliteListItemRenderer());
+		eventList.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		DefaultListModel listModel = new DefaultListModel<>();
+		eventList.setModel(listModel);
+
+		int index = 0;
+		for (String s : options)
+		{
+			listModel.add(index, s);
+			index++;
+		}
+
+		return eventList;
 	}
 
 	// Creates icons used for tab selection for a specific category

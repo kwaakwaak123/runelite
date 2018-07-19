@@ -24,12 +24,6 @@
  */
 package net.runelite.client.plugins.droplogger;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.Sets;
 import com.google.common.eventbus.Subscribe;
 import com.google.inject.Provides;
 import java.awt.Color;
@@ -47,7 +41,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.Item;
-import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameTick;
@@ -68,12 +61,8 @@ import net.runelite.client.game.loot.events.PlayerLootReceived;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.droplogger.data.Boss;
-import net.runelite.client.plugins.droplogger.data.GroundItem;
 import net.runelite.client.plugins.droplogger.data.LootEntry;
 import net.runelite.client.plugins.droplogger.data.Pet;
-import net.runelite.client.plugins.droplogger.data.SessionLog;
-import net.runelite.client.plugins.droplogger.data.SessionLogData;
-import net.runelite.client.plugins.droplogger.data.SessionNpcLog;
 import net.runelite.client.plugins.droplogger.data.WatchNpcs;
 import net.runelite.client.plugins.droplogger.ui.LoggerPanel;
 import net.runelite.client.ui.NavigationButton;
@@ -109,8 +98,8 @@ public class DropLoggerPlugin extends Plugin
 	@Inject
 	private ChatMessageManager chatMessageManager;
 
+	private NavigationButton navButton;
 	private BossLoggerWriter writer;
-
 	private LoggerPanel panel;
 
 	// Chat Message Regex
@@ -120,30 +109,14 @@ public class DropLoggerPlugin extends Plugin
 	private static final Pattern PET_RECEIVED_INVENTORY_PATTERN = Pattern.compile("You feel something weird sneaking into your backpack.");
 	private static final Pattern CLUE_SCROLL_PATTERN = Pattern.compile("You have completed (\\d*) (\\w*) Treasure Trails.");
 
-	// Time as in amount of game ticks
-	private static final int NPC_DROP_DISAPPEAR_TIME = 199; // 2 minutes if item was dropped by an NPC
-	private static final int PLAYER_DROP_DISAPPEAR_TIME = 299; // 3 minutes if player drops an item
-	private static final int INSTANCE_DROP_DISAPPEAR_TIME = 2999; // 30 minutes for various instances
-
 	// In-game notification message color
 	private String messageColor = "";
 	private boolean gotPet = false;
 
-	private int tickCounter = 0;
-
 	// Mapping Variables
-	private Map<Boss, Boolean> recordingMap = new HashMap<>(); 				// Store config recording value for each Tab
-	private Map<Boss, ArrayList<LootEntry>> lootMap = new HashMap<>();		// Store loot entries for each Tab
-	private Map<Boss, String> filenameMap = new HashMap<>(); 				// Stores filename for each Tab
-	private Map<String, Integer> killcountMap = new HashMap<>(); 			// Store boss kill count by boss name
-
-	// Session Variables
-	private Multimap<WorldPoint, GroundItem> myItems = ArrayListMultimap.create();
-	private Multimap<Integer, GroundItem> itemDisappearMap = Multimaps.newListMultimap(Maps.newTreeMap(), Lists::newArrayList);
-	private Multimap<Integer, SessionLog> responsibleLogs = Multimaps.newSetMultimap(Maps.newHashMap(), Sets::newHashSet);
-
-	@Getter
-	private SessionLogData sessionLogData;
+	private Map<String, ArrayList<LootEntry>> lootMap = new HashMap<>(); // Store loot entries for each NPC/Boss name
+	private Map<String, String> filenameMap = new HashMap<>(); 			 // Stores filename for each NPC/Boss name
+	private Map<String, Integer> killcountMap = new HashMap<>(); 		 // Store kill count by name
 
 	@Provides
 	DropLoggerConfig provideConfig(ConfigManager configManager)
@@ -162,9 +135,8 @@ public class DropLoggerPlugin extends Plugin
 			icon = ImageIO.read(DropLoggerPlugin.class.getResourceAsStream("panel_icon.png"));
 		}
 		panel = new LoggerPanel(this, itemManager);
-		panel.createSessionPanel(sessionLogData);
 
-		NavigationButton navButton = NavigationButton.builder()
+		navButton = NavigationButton.builder()
 			.tooltip("Drop Logger")
 			.priority(3)
 			.icon(icon)
@@ -178,13 +150,7 @@ public class DropLoggerPlugin extends Plugin
 	@Override
 	protected void shutDown() throws Exception
 	{
-		this.tickCounter = 0;
-	}
-
-	@Subscribe
-	public void onGameTick(GameTick t)
-	{
-		tickCounter++;
+		pluginToolbar.removeNavigation(navButton);
 	}
 
 	@Subscribe
@@ -195,30 +161,23 @@ public class DropLoggerPlugin extends Plugin
 
 	private void init()
 	{
-		this.tickCounter = 0;
-
-		this.sessionLogData = new SessionLogData();
-
 		// Create maps for easy management of certain features
-		Map<Boss, Boolean> mapRecording = new HashMap<>();
-		Map<Boss, ArrayList<LootEntry>> mapLoot = new HashMap<>();
-		Map<Boss, String> mapFilename = new HashMap<>();
+		Map<String, ArrayList<LootEntry>> mapLoot = new HashMap<>();
+		Map<String, String> mapFilename = new HashMap<>();
 		Map<String, Integer> mapKillcount = new HashMap<>();
 		for (Boss tab : Boss.values())
 		{
-			// Is Boss being recorded?
-			mapRecording.put(tab, true);
+			String name = tab.getBossName().toUpperCase();
 			// Loot Entries by Tab Name
 			ArrayList<LootEntry> array = new ArrayList<LootEntry>();
-			mapLoot.put(tab, array);
+			mapLoot.put(name, array);
 			// Filenames. Removes all spaces, periods, and apostrophes
 			String filename = tab.getName().replaceAll("( |'|\\.)", "").toLowerCase() + ".log";
-			mapFilename.put(tab, filename);
+			mapFilename.put(name, filename);
 			// Kill Count
 			int killcount = 0;
-			mapKillcount.put(tab.getBossName().toUpperCase(), killcount);
+			mapKillcount.put(name, killcount);
 		}
-		recordingMap = mapRecording;
 		lootMap = mapLoot;
 		killcountMap = mapKillcount;
 		filenameMap = mapFilename;
@@ -324,7 +283,7 @@ public class DropLoggerPlugin extends Plugin
 		int KC = killcountMap.get(bossName.toUpperCase());
 		LootEntry newEntry = new LootEntry(KC, drops);
 		if (gotPet)
-			newEntry.addDrop(handlePet(bossName));
+			newEntry.addDropItem(handlePet(bossName));
 		addLootEntry(bossName, newEntry);
 		dropLoggedAlert(bossName + " kill added to log.");
 	}
@@ -385,7 +344,7 @@ public class DropLoggerPlugin extends Plugin
 		// Update data inside plugin
 		ArrayList<LootEntry> loots = lootMap.get(boss);
 		LootEntry entry = loots.get(loots.size() - 1);
-		entry.addDrop(newDrop);
+		entry.addDropItem(newDrop);
 		// Ensure updates are applied, may not be necessary
 		loots.add(loots.size() - 1, entry);
 		lootMap.put(boss, loots);
@@ -459,7 +418,7 @@ public class DropLoggerPlugin extends Plugin
 		LootEntry entry = new LootEntry(kc, e.getItems());
 		// Got a pet?
 		if (gotPet)
-			entry.addDrop(handlePet(eventName));
+			entry.addDropItem(handlePet(eventName));
 		addLootEntry(eventName, entry);
 
 		dropLoggedAlert("Loot from " + eventName.toLowerCase() + " added to log.");
@@ -471,45 +430,32 @@ public class DropLoggerPlugin extends Plugin
 	{
 		log.info("NPC loot Received: {}", e);
 
-		// Session Code
-		List<Item> items = e.getItems();
-		SessionLog detailedLog = new SessionNpcLog(items, e.getComposition());
-
-		int itemDuration = (client.isInInstancedRegion() ? INSTANCE_DROP_DISAPPEAR_TIME : NPC_DROP_DISAPPEAR_TIME);
-		int disappearsOnTick = tickCounter + itemDuration;
-		for (Item i : items)
-		{
-			GroundItem groundItem = new GroundItem(i.getId(), i.getQuantity(), e.getLocation(), disappearsOnTick, detailedLog);
-
-			// Memorize which items on the ground were dropped users kills and when we can forget them
-			myItems.put(groundItem.getLocation(), groundItem);
-			itemDisappearMap.put(disappearsOnTick, groundItem);
-		}
-
-		sessionLogData.getSessionLogs().add(detailedLog);
-		panel.updatedSessionLog();
-
-
-		// Boss Logging only cares about certain NPCs
+		// Certain NPCs we care about their kill count.
 		WatchNpcs watchList = WatchNpcs.getByNpcId(e.getNpcId());
-		if (watchList == null)
-			return;
-
-		// Find tab that cares about this NPC
-		Boss boss = Boss.getByBossName(watchList.getName());
-		if (boss == null)
+		LootEntry lootEntry = null;
+		if (watchList != null)
 		{
-			log.warn("Couldn't find a tab for WatchNpcs: ", watchList);
-			return;
+			// Find tab that cares about this NPC
+			Boss boss = Boss.getByBossName(watchList.getName());
+			if (boss == null)
+			{
+				log.warn("Couldn't find a tab for WatchNpcs: ", watchList);
+			}
+			else
+			{
+				int KC = killcountMap.get(boss.getBossName().toUpperCase());
+				lootEntry = new LootEntry(e.getNpcId(), e.getComposition().getName(), KC, e.getItems());
+			}
 		}
 
-		// User wants us to record this tab?
-		Boolean recordingFlag = recordingMap.get(boss);
-		if (recordingFlag == null || !recordingFlag)
-			return;
+
+		if (lootEntry == null)
+		{
+			lootEntry = new LootEntry(e.getNpcId(), e.getComposition().getName(), e.getItems());
+		}
 
 		// Add the loot to the file
-		AddBossLootEntry(boss.getBossName(), e.getItems());
+		AddLootEntry(boss, e.getItems());
 	}
 
 	// Check for Unsired loot reclaiming

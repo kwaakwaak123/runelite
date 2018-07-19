@@ -33,25 +33,115 @@ public class LootEntry
 {
 	@Getter
 	private final Integer killCount;
-
+	@Getter
+	private final int npcID;
+	@Getter
+	private final String npcName;
 	@Getter
 	final List<DropEntry> drops;
 
-	public LootEntry(int killCount, List<Item> d)
+	// Full Kill with Kill Count
+	public LootEntry(int npcId, String npcName, int kc, List drops)
 	{
-		List<DropEntry> drops = new ArrayList<>();
-		if (d != null)
-		{
-			for (Item i : d)
-			{
-				drops.add(new DropEntry(i.getId(), i.getQuantity()));
-			}
-		}
-		this.killCount = killCount;
-		this.drops = drops;
+		this.npcID = npcId;
+		this.npcName = npcName;
+		this.killCount = kc;
+		this.drops = listCheck(drops);
 	}
 
-	public void addDrop(Item drop)
+	// Full Kill without Kill Count
+	public LootEntry(int npcId, String npcName, List drops)
+	{
+		this.npcID = npcId;
+		this.npcName = npcName;
+		this.killCount = -1;
+		this.drops = listCheck(drops);
+	}
+
+	// Npc ID Only Kill with Kill Count
+	public LootEntry(int npcId, int kc, List drops)
+	{
+		this.npcID = npcId;
+		this.npcName = null;
+		this.killCount = kc;
+		this.drops = listCheck(drops);
+	}
+
+	// Npc ID Only Kill without Kill Count
+	public LootEntry(int npcId, List drops)
+	{
+		this.npcID = npcId;
+		this.npcName = null;
+		this.killCount = -1;
+		this.drops = listCheck(drops);
+	}
+
+	// Name Only Kill with Kill Count
+	public LootEntry(String npcName, int kc, List drops)
+	{
+		this.npcID = -1;
+		this.npcName = npcName;
+		this.killCount = kc;
+		this.drops = listCheck(drops);
+	}
+
+	// Name Only Kill without Kill Count
+	public LootEntry(String npcName, List drops)
+	{
+		this.npcID = -1;
+		this.npcName = npcName;
+		this.killCount = -1;
+		this.drops = listCheck(drops);
+	}
+
+	// Allows for creating LootEntry's with either a List of DropEntry's or Item's
+	private List<DropEntry> listCheck(List drops)
+	{
+		if (drops == null || drops.size() < 1)
+		{
+			return new ArrayList<>();
+		}
+		else
+		{
+			// If this is already a List of DropEntry just return the list
+			Object i = drops.get(0);
+			if (i instanceof DropEntry)
+			{
+				return drops;
+			}
+			else if (i instanceof Item)
+			{
+				List<DropEntry> result = new ArrayList<>();
+				for (Object each : drops)
+				{
+					Item item = (Item) each;
+					result.add(new DropEntry(item.getId(), item.getQuantity()));
+				}
+
+				return result;
+			}
+			else
+			{
+				// Trying to pass a list of some other Object type
+				return new ArrayList<>();
+			}
+		}
+	}
+
+	/**
+	 * Add the request DropEntry to this LootEntry
+	 * @param drop DropEntry to add
+	 */
+	public void addDropEntry(DropEntry drop)
+	{
+		drops.add(drop);
+	}
+
+	/**
+	 * Converts the Requested item into a DropEntry and then adds it to the LootEntry
+	 * @param drop Item to add as DropEntry
+	 */
+	public void addDropItem(Item drop)
 	{
 		DropEntry d = new DropEntry(drop.getId(), drop.getQuantity());
 		drops.add(d);
@@ -61,9 +151,14 @@ public class LootEntry
 	public String toString()
 	{
 		StringBuilder m = new StringBuilder();
-		m.append("LootRecord{killCount=")
+		m.append("LootEntry{npcID=")
+				.append(npcID)
+				.append(", npcName=")
+				.append(npcName)
+				.append(", killCount=")
 				.append(killCount)
 				.append(", drops=");
+
 		if (drops != null)
 		{
 			m.append("[");
@@ -74,6 +169,7 @@ public class LootEntry
 				{
 					m.append(", ");
 				}
+
 				m.append(d.toString());
 				addComma = true;
 			}
@@ -84,6 +180,7 @@ public class LootEntry
 			m.append("null");
 		}
 		m.append("}");
+
 		return m.toString();
 	}
 }
