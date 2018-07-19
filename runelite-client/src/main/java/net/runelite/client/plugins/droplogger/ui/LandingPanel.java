@@ -30,6 +30,7 @@ import net.runelite.client.plugins.droplogger.data.Boss;
 import net.runelite.client.ui.components.materialtabs.MaterialTab;
 import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -72,6 +73,13 @@ public class LandingPanel extends JPanel
 		c.weighty = 0;
 		c.gridx = 0;
 		c.gridy = 0;
+
+
+		JButton sessionButton = new JButton("Current Session");
+		sessionButton.setFocusable(false);
+		sessionButton.addActionListener(e -> parent.showSessionPage());
+		this.add(sessionButton, c);
+		c.gridy++;
 
 		// Add the Boss selection elements by category
 		Set<String> categories = Boss.categories;

@@ -24,6 +24,12 @@
  */
 package net.runelite.client.plugins.droplogger;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.Sets;
 import com.google.common.eventbus.Subscribe;
 import com.google.inject.Provides;
 import java.awt.Color;
@@ -41,6 +47,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.Item;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.GameTick;
@@ -61,8 +68,12 @@ import net.runelite.client.game.loot.events.PlayerLootReceived;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.droplogger.data.Boss;
+import net.runelite.client.plugins.droplogger.data.GroundItem;
 import net.runelite.client.plugins.droplogger.data.LootEntry;
 import net.runelite.client.plugins.droplogger.data.Pet;
+import net.runelite.client.plugins.droplogger.data.SessionLog;
+import net.runelite.client.plugins.droplogger.data.SessionLogData;
+import net.runelite.client.plugins.droplogger.data.SessionNpcLog;
 import net.runelite.client.plugins.droplogger.data.WatchNpcs;
 import net.runelite.client.plugins.droplogger.ui.LoggerPanel;
 import net.runelite.client.ui.NavigationButton;
@@ -109,6 +120,11 @@ public class DropLoggerPlugin extends Plugin
 	private static final Pattern PET_RECEIVED_INVENTORY_PATTERN = Pattern.compile("You feel something weird sneaking into your backpack.");
 	private static final Pattern CLUE_SCROLL_PATTERN = Pattern.compile("You have completed (\\d*) (\\w*) Treasure Trails.");
 
+	// Time as in amount of game ticks
+	private static final int NPC_DROP_DISAPPEAR_TIME = 199; // 2 minutes if item was dropped by an NPC
+	private static final int PLAYER_DROP_DISAPPEAR_TIME = 299; // 3 minutes if player drops an item
+	private static final int INSTANCE_DROP_DISAPPEAR_TIME = 2999; // 30 minutes for various instances
+
 	// In-game notification message color
 	private String messageColor = "";
 	private boolean gotPet = false;
@@ -120,6 +136,14 @@ public class DropLoggerPlugin extends Plugin
 	private Map<Boss, ArrayList<LootEntry>> lootMap = new HashMap<>();		// Store loot entries for each Tab
 	private Map<Boss, String> filenameMap = new HashMap<>(); 				// Stores filename for each Tab
 	private Map<String, Integer> killcountMap = new HashMap<>(); 			// Store boss kill count by boss name
+
+	// Session Variables
+	private Multimap<WorldPoint, GroundItem> myItems = ArrayListMultimap.create();
+	private Multimap<Integer, GroundItem> itemDisappearMap = Multimaps.newListMultimap(Maps.newTreeMap(), Lists::newArrayList);
+	private Multimap<Integer, SessionLog> responsibleLogs = Multimaps.newSetMultimap(Maps.newHashMap(), Sets::newHashSet);
+
+	@Getter
+	private SessionLogData sessionLogData;
 
 	@Provides
 	DropLoggerConfig provideConfig(ConfigManager configManager)
@@ -138,6 +162,7 @@ public class DropLoggerPlugin extends Plugin
 			icon = ImageIO.read(DropLoggerPlugin.class.getResourceAsStream("panel_icon.png"));
 		}
 		panel = new LoggerPanel(this, itemManager);
+		panel.createSessionPanel(sessionLogData);
 
 		NavigationButton navButton = NavigationButton.builder()
 			.tooltip("Drop Logger")
@@ -171,6 +196,8 @@ public class DropLoggerPlugin extends Plugin
 	private void init()
 	{
 		this.tickCounter = 0;
+
+		this.sessionLogData = new SessionLogData();
 
 		// Create maps for easy management of certain features
 		Map<Boss, Boolean> mapRecording = new HashMap<>();
@@ -442,7 +469,28 @@ public class DropLoggerPlugin extends Plugin
 	@Subscribe
 	protected void onNpcLootReceived(NpcLootReceived e)
 	{
-		// Only care about certain NPCs
+		log.info("NPC loot Received: {}", e);
+
+		// Session Code
+		List<Item> items = e.getItems();
+		SessionLog detailedLog = new SessionNpcLog(items, e.getComposition());
+
+		int itemDuration = (client.isInInstancedRegion() ? INSTANCE_DROP_DISAPPEAR_TIME : NPC_DROP_DISAPPEAR_TIME);
+		int disappearsOnTick = tickCounter + itemDuration;
+		for (Item i : items)
+		{
+			GroundItem groundItem = new GroundItem(i.getId(), i.getQuantity(), e.getLocation(), disappearsOnTick, detailedLog);
+
+			// Memorize which items on the ground were dropped users kills and when we can forget them
+			myItems.put(groundItem.getLocation(), groundItem);
+			itemDisappearMap.put(disappearsOnTick, groundItem);
+		}
+
+		sessionLogData.getSessionLogs().add(detailedLog);
+		panel.updatedSessionLog();
+
+
+		// Boss Logging only cares about certain NPCs
 		WatchNpcs watchList = WatchNpcs.getByNpcId(e.getNpcId());
 		if (watchList == null)
 			return;

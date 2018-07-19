@@ -37,10 +37,12 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.droplogger.DropLoggerPlugin;
 import net.runelite.client.plugins.droplogger.data.Boss;
+import net.runelite.client.plugins.droplogger.data.SessionLogData;
 import net.runelite.client.plugins.droplogger.data.UniqueItem;
 import net.runelite.client.plugins.droplogger.data.LootEntry;
 import net.runelite.client.ui.PluginPanel;
@@ -63,6 +65,7 @@ import static net.runelite.client.plugins.droplogger.ui.Constants.REFRESH;
 @Slf4j
 public class LoggerPanel extends PluginPanel
 {
+	@Getter
 	private final ItemManager itemManager;
 	private final DropLoggerPlugin plugin;
 
@@ -73,6 +76,7 @@ public class LoggerPanel extends PluginPanel
 
 	private LandingPanel landingPanel;
 	private LootPanel lootPanel;
+	private SessionPanel sessionPanel;
 
 	@Inject
 	public LoggerPanel(DropLoggerPlugin DropLoggerPlugin, ItemManager itemManager)
@@ -145,6 +149,26 @@ public class LoggerPanel extends PluginPanel
 
 		this.add(title, BorderLayout.NORTH);
 		this.add(wrapContainer(lootPanel), BorderLayout.CENTER);
+	}
+
+	// Session Panel
+	public void createSessionPanel(SessionLogData data)
+	{
+		currentTab = null;
+
+		// Clear all Data
+		this.removeAll();
+		title.removeAll();
+
+		// Tile Update
+		title = createLootPanelTitle(title, "Session Data");
+
+
+		// Content Update
+		sessionPanel = new SessionPanel(this, data);
+
+		this.add(title, BorderLayout.NORTH);
+		this.add(wrapContainer(sessionPanel), BorderLayout.CENTER);
 	}
 
 	// Icon Label with Hover effects
@@ -249,6 +273,14 @@ public class LoggerPanel extends PluginPanel
 		this.repaint();
 	}
 
+	public void showSessionPage()
+	{
+		createSessionPanel(plugin.getSessionLogData());
+
+		this.revalidate();
+		this.repaint();
+	}
+
 	// Wrap the panel inside a scroll pane
 	private JScrollPane wrapContainer(JPanel container)
 	{
@@ -292,6 +324,15 @@ public class LoggerPanel extends PluginPanel
 			plugin.clearData(boss);
 			// Refresh current panel
 			refreshLootPanel(lootPanel, boss);
+		}
+	}
+
+	// Called when
+	public void updatedSessionLog()
+	{
+		if (sessionPanel != null)
+		{
+			sessionPanel.onLogShouldUpdate();
 		}
 	}
 }
