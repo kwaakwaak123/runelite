@@ -50,6 +50,7 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.discord.DiscordService;
 import net.runelite.client.game.ClanManager;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.game.LootManager;
 import net.runelite.client.menus.MenuManager;
 import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.rs.ClientUpdateCheckMode;
@@ -136,6 +137,9 @@ public class RuneLite
 	private WorldMapOverlay worldMapOverlay;
 
 	@Inject
+	private LootManager lootManager;
+
+	@Inject
 	@Nullable
 	private Client client;
 
@@ -219,7 +223,7 @@ public class RuneLite
 			// Inject members into client
 			injector.injectMembers(client);
 		}
-
+		
 		// Load user configuration
 		configManager.load();
 
