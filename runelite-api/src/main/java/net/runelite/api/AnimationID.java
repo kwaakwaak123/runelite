@@ -131,6 +131,8 @@ public final class AnimationID
 	public static final int DEMONIC_GORILLA_PRAYER_SWITCH = 7228;
 	public static final int DEMONIC_GORILLA_DEFEND = 7224;
 	public static final int IMP_DEATH = 172;
+	public static final int CAVE_KRAKEN_DEATH = 3993;
+	public static final int WIZARD_DEATH = 2553;
 
 	// NPC animations
 	public static final int TZTOK_JAD_MAGIC_ATTACK = 2656;

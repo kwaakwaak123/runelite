@@ -26,6 +26,7 @@
 package net.runelite.client.game;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -38,6 +39,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.AnimationID;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.InventoryID;
@@ -51,6 +53,7 @@ import net.runelite.api.Tile;
 import net.runelite.api.Varbits;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemQuantityChanged;
@@ -81,6 +84,15 @@ public class LootManager
 	// Used to trigger the event on first open.
 	private boolean hasOpenedRaidsRewardChest = false;
 	private boolean hasOpenedTheatreOfBloodRewardChest = false;
+	private WorldPoint krakenPlayerLocation;
+
+	private static final Map<Integer, Integer> NPC_DEATH_ANIMATIONS = ImmutableMap.of(
+			NpcID.CAVE_KRAKEN, AnimationID.CAVE_KRAKEN_DEATH,
+			NpcID.AIR_WIZARD, AnimationID.WIZARD_DEATH,
+			NpcID.WATER_WIZARD, AnimationID.WIZARD_DEATH,
+			NpcID.EARTH_WIZARD, AnimationID.WIZARD_DEATH,
+			NpcID.FIRE_WIZARD, AnimationID.WIZARD_DEATH
+	);
 
 	@Inject
 	private LootManager(EventBus eventBus, Provider<Client> client)
@@ -127,6 +139,16 @@ public class LootManager
 			return;
 		}
 
+		newNpcLootEvent(npc);
+	}
+
+
+	/**
+	 * Create new NpcLootReceived event
+	 * @param npc NPC to check
+	 */
+	private void newNpcLootEvent(NPC npc)
+	{
 		Client client = this.client.get();
 		WorldPoint worldLocation = npc.getWorldLocation();
 
@@ -135,8 +157,10 @@ public class LootManager
 			case NpcID.KRAKEN:
 			case NpcID.KRAKEN_6640:
 			case NpcID.KRAKEN_6656:
-			case NpcID.CAVE_KRAKEN:
 				worldLocation = playerLocationLastTick;
+				break;
+			case NpcID.CAVE_KRAKEN:
+				worldLocation = krakenPlayerLocation;
 				break;
 			case NpcID.ZULRAH:		// Green
 			case NpcID.ZULRAH_2043: // Red
@@ -212,6 +236,39 @@ public class LootManager
 			}
 			final NpcLootReceived npcLootReceived = new NpcLootReceived(npc, items);
 			eventBus.post(npcLootReceived);
+		}
+	}
+
+	@Subscribe
+	public void onAnimationChanged(AnimationChanged e)
+	{
+		if (!(e.getActor() instanceof NPC))
+		{
+			return;
+		}
+
+		NPC n = (NPC) e.getActor();
+		int id = n.getId();
+
+		// We only care about certain NPCs
+		if (!NPC_DEATH_ANIMATIONS.containsKey(id))
+		{
+			return;
+		}
+
+		// Current animation is death animation?
+		if (NPC_DEATH_ANIMATIONS.get(id) == n.getAnimation())
+		{
+			if (id == NpcID.CAVE_KRAKEN)
+			{
+				// Big Kraken drops loot wherever player is standing when animation starts.
+				krakenPlayerLocation = this.client.get().getLocalPlayer().getWorldLocation();
+			}
+			else
+			{
+				// These NPCs drop loot on death animation, which is right now.
+				newNpcLootEvent(n);
+			}
 		}
 	}
 
