@@ -156,9 +156,10 @@ public class LootManager
 			for (int j = 0; j < size; ++j)
 			{
 				final int packed = (x + i) << 8 | (y + j);
-				if (!items.isEmpty())
+				Collection<ItemStack> groundItems = itemSpawns.get(packed);
+				if (!groundItems.isEmpty())
 				{
-					items.addAll(itemSpawns.get(packed));
+					items.addAll(groundItems);
 				}
 			}
 		}
@@ -167,7 +168,7 @@ public class LootManager
 		{
 			for (ItemStack item : items)
 			{
-				log.debug("Drop from {}: {}", npc.getName(), item.getId());
+				log.debug("Drop from {}: {}x {} ", npc.getName(), item.getQuantity(), item.getId());
 			}
 			final NpcLootReceived npcLootReceived = new NpcLootReceived(npc, items);
 			eventBus.post(npcLootReceived);
@@ -182,7 +183,7 @@ public class LootManager
 		final LocalPoint location = tile.getLocalLocation();
 		final int packed = location.getSceneX() << 8 | location.getSceneY();
 		itemSpawns.put(packed, new ItemStack(item.getId(), item.getQuantity()));
-		log.debug("Item spawn {} loc {},{}", item.getId(), location.getSceneX(), location.getSceneY());
+		log.debug("Item spawn {}x {} loc {},{}", item.getQuantity(), item.getId(), location.getSceneX(), location.getSceneY());
 	}
 
 	@Subscribe
@@ -281,7 +282,7 @@ public class LootManager
 				log.debug("Loot Received from Event: {}", eventType);
 				for (ItemStack item : items)
 				{
-					log.debug("Item Dropped: {} | {}", item.getId(), item.getQuantity());
+					log.debug("Item Received: {}x {}", item.getQuantity(), item.getId());
 				}
 
 				final EventLootReceived lootReceived = new EventLootReceived(eventType, items);
