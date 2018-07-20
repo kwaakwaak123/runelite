@@ -31,6 +31,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
@@ -42,6 +43,7 @@ import net.runelite.api.Client;
 import net.runelite.api.InventoryID;
 import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
+import net.runelite.api.ItemID;
 import net.runelite.api.NPC;
 import net.runelite.api.NpcID;
 import net.runelite.api.Player;
@@ -148,24 +150,27 @@ public class LootManager
 		final int y = location.getSceneY();
 		final int size = npc.getComposition().getSize();
 
+		final Collection<ItemStack> items = new ArrayList<>();
 		for (int i = 0; i < size; ++i)
 		{
 			for (int j = 0; j < size; ++j)
 			{
 				final int packed = (x + i) << 8 | (y + j);
-				final Collection<ItemStack> items = itemSpawns.get(packed);
 				if (!items.isEmpty())
 				{
-					for (ItemStack item : items)
-					{
-						log.debug("Drop from {}: {}", npc.getName(), item.getId());
-					}
-
-					final NpcLootReceived npcLootReceived = new NpcLootReceived(npc, items);
-					eventBus.post(npcLootReceived);
-					break;
+					items.addAll(itemSpawns.get(packed));
 				}
 			}
+		}
+
+		if (!items.isEmpty())
+		{
+			for (ItemStack item : items)
+			{
+				log.debug("Drop from {}: {}", npc.getName(), item.getId());
+			}
+			final NpcLootReceived npcLootReceived = new NpcLootReceived(npc, items);
+			eventBus.post(npcLootReceived);
 		}
 	}
 
@@ -281,16 +286,10 @@ public class LootManager
 
 				final EventLootReceived lootReceived = new EventLootReceived(eventType, items);
 				eventBus.post(lootReceived);
-
-				// Rest eventType
-				eventType = LootEventType.UNKNOWN_EVENT;
 			}
 			else
 			{
 				log.debug("No items to find for Event: {} | Container: {}", eventType, container);
-
-				// Rest eventType
-				eventType = LootEventType.UNKNOWN_EVENT;
 			}
 		}
 	}
