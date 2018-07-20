@@ -138,6 +138,46 @@ public class LootManager
 			case NpcID.CAVE_KRAKEN:
 				worldLocation = playerLocationLastTick;
 				break;
+			case NpcID.ZULRAH:		// Green
+			case NpcID.ZULRAH_2043: // Red
+			case NpcID.ZULRAH_2044: // Blue
+				for (Map.Entry<Integer, ItemStack> entry : itemSpawns.entries())
+				{
+					if (entry.getValue().getId() == ItemID.ZULRAHS_SCALES)
+					{
+						int packed = entry.getKey();
+						int unpackedX = packed << 8;
+						int unpackedY = packed & 0xFF;
+						worldLocation = new WorldPoint(unpackedX, unpackedY, worldLocation.getPlane());
+						break;
+					}
+				}
+				break;
+			case NpcID.VORKATH:
+			case NpcID.VORKATH_8058:
+			case NpcID.VORKATH_8059:
+			case NpcID.VORKATH_8060:
+			case NpcID.VORKATH_8061:
+				int x = worldLocation.getX() + 3;
+				int y = worldLocation.getY() + 3;
+				if (playerLocationLastTick.getX() < x)
+				{
+					x -= 4;
+				}
+				else if (playerLocationLastTick.getX() > x)
+				{
+					x += 4;
+				}
+				if (playerLocationLastTick.getY() < y)
+				{
+					y -= 4;
+				}
+				else if (playerLocationLastTick.getY() > y)
+				{
+					y += 4;
+				}
+				worldLocation = new WorldPoint(x, y, worldLocation.getPlane());
+				break;
 		}
 
 		final LocalPoint location = LocalPoint.fromWorld(client, worldLocation);
