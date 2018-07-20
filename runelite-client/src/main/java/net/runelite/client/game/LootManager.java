@@ -29,26 +29,39 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
+import net.runelite.api.InventoryID;
 import net.runelite.api.Item;
+import net.runelite.api.ItemContainer;
 import net.runelite.api.NPC;
 import net.runelite.api.NpcID;
 import net.runelite.api.Player;
 import net.runelite.api.Tile;
+import net.runelite.api.Varbits;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemQuantityChanged;
 import net.runelite.api.events.ItemSpawned;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.PlayerDespawned;
+import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.events.WidgetLoaded;
+import net.runelite.api.widgets.WidgetID;
+import net.runelite.client.events.EventLootReceived;
 import net.runelite.client.events.NpcLootReceived;
 import net.runelite.client.events.PlayerLootReceived;
+import net.runelite.client.util.Text;
 
 @Singleton
 @Slf4j
@@ -58,6 +71,14 @@ public class LootManager
 	private final Provider<Client> client;
 	private final Multimap<Integer, ItemStack> itemSpawns = HashMultimap.create();
 	private WorldPoint playerLocationLastTick;
+
+	private static final Pattern CLUE_SCROLL_PATTERN = Pattern.compile("You have completed [0-9]+ ([a-z]+) Treasure Trails.");
+	// Not local since it's also used in onChatMessage to determine clue scroll type
+	private LootEventType eventType;
+
+	// Used to trigger the event on first open.
+	private boolean hasOpenedRaidsRewardChest = false;
+	private boolean hasOpenedTheatreOfBloodRewardChest = false;
 
 	@Inject
 	private LootManager(EventBus eventBus, Provider<Client> client)
@@ -181,5 +202,134 @@ public class LootManager
 	{
 		playerLocationLastTick = client.get().getLocalPlayer().getWorldLocation();
 		itemSpawns.clear();
+	}
+
+	@Subscribe
+	public void onVarbitChanged(VarbitChanged event)
+	{
+		Client client = this.client.get();
+
+		// Not inside Raids?
+		if (client.getVar(Varbits.IN_RAID) == 0)
+		{
+			this.hasOpenedRaidsRewardChest = false;
+		}
+
+		// Not inside Theatre of Blood?
+		int theatreState = client.getVar(Varbits.THEATRE_OF_BLOOD);
+		if (theatreState == 0 || theatreState == 1)
+		{
+				this.hasOpenedTheatreOfBloodRewardChest = false;
+		}
+	}
+
+	@Subscribe
+	public void onWidgetLoaded(WidgetLoaded event)
+	{
+		Client client = this.client.get();
+
+		ItemContainer container = null;
+		switch (event.getGroupId())
+		{
+			case (WidgetID.BARROWS_REWARD_GROUP_ID):
+				eventType = LootEventType.BARROWS;
+				container = client.getItemContainer(InventoryID.BARROWS_REWARD);
+				break;
+			case (WidgetID.CHAMBERS_OF_XERIC_REWARD_GROUP_ID):
+				if (hasOpenedRaidsRewardChest)
+				{
+					return;
+				}
+
+				eventType = LootEventType.CHAMBERS_OF_XERIC;
+				container = client.getItemContainer(InventoryID.CHAMBERS_OF_XERIC_CHEST);
+				break;
+			case (WidgetID.THEATRE_OF_BLOOD_GROUP_ID):
+				if (hasOpenedTheatreOfBloodRewardChest)
+				{
+					return;
+				}
+
+				eventType = LootEventType.THEATRE_OF_BLOOD;
+				container = client.getItemContainer(InventoryID.THEATRE_OF_BLOOD_CHEST);
+				break;
+			case (WidgetID.CLUE_SCROLL_REWARD_GROUP_ID):
+				// event type should be set via ChatMessage for clue scrolls.
+				// Clue Scrolls use same InventoryID as Barrows
+				container = client.getItemContainer(InventoryID.BARROWS_REWARD);
+				break;
+			default:
+				return;
+		}
+
+		if (container != null)
+		{
+			// Convert container items to collection of ItemStack
+			Collection<ItemStack> items = new ArrayList<>();
+			for (Item item : container.getItems())
+			{
+				items.add(new ItemStack(item.getId(), item.getQuantity()));
+			}
+
+			if (!items.isEmpty())
+			{
+				log.debug("Loot Received from Event: {}", eventType);
+				for (ItemStack item : items)
+				{
+					log.debug("Item Dropped: {} | {}", item.getId(), item.getQuantity());
+				}
+
+				final EventLootReceived lootReceived = new EventLootReceived(eventType, items);
+				eventBus.post(lootReceived);
+
+				// Rest eventType
+				eventType = LootEventType.UNKNOWN_EVENT;
+			}
+			else
+			{
+				log.debug("No items to find for Event: {} | Container: {}", eventType, container);
+
+				// Rest eventType
+				eventType = LootEventType.UNKNOWN_EVENT;
+			}
+		}
+	}
+
+	@Subscribe
+	public void onChatMessage(ChatMessage event)
+	{
+		if (event.getType() != ChatMessageType.SERVER && event.getType() != ChatMessageType.FILTERED)
+		{
+			return;
+		}
+
+		String chatMessage = event.getMessage();
+
+		// Check if message is for a clue scroll reward
+		Matcher m = CLUE_SCROLL_PATTERN.matcher(Text.removeTags(chatMessage));
+		if (m.find())
+		{
+			String type = m.group(1).toLowerCase();
+			switch (type)
+			{
+				case "easy":
+					eventType = LootEventType.CLUE_SCROLL_EASY;
+					break;
+				case "medium":
+					eventType = LootEventType.CLUE_SCROLL_MEDIUM;
+					break;
+				case "hard":
+					eventType = LootEventType.CLUE_SCROLL_HARD;
+					break;
+				case "elite":
+					eventType = LootEventType.CLUE_SCROLL_ELITE;
+					break;
+				case "master":
+					eventType = LootEventType.CLUE_SCROLL_MASTER;
+					break;
+				default:
+					eventType = LootEventType.UNKNOWN_EVENT;
+			}
+		}
 	}
 }
