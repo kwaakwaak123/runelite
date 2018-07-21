@@ -24,25 +24,14 @@
  */
 package net.runelite.client.plugins.droplogger.ui;
 
-import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
-import net.runelite.client.plugins.droplogger.data.Boss;
-import net.runelite.client.ui.components.materialtabs.MaterialTab;
-import net.runelite.client.ui.components.materialtabs.MaterialTabGroup;
-import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
-import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -50,16 +39,17 @@ import static net.runelite.client.plugins.droplogger.ui.Constants.BACKGROUND_COL
 import static net.runelite.client.plugins.droplogger.ui.Constants.BUTTON_COLOR;
 import static net.runelite.client.plugins.droplogger.ui.Constants.BUTTON_HOVER_COLOR;
 import static net.runelite.client.plugins.droplogger.ui.Constants.CONTENT_BORDER;
-import static net.runelite.client.plugins.droplogger.ui.Constants.TOP_BORDER;
 
 public class LandingPanel extends JPanel
 {
+	private Set<String> sessionActors;
 	private final LoggerPanel parent;
 	private final ItemManager itemManager;
 	private JPanel eventList;
 
 	LandingPanel(Set<String> sessionActors, LoggerPanel parent, ItemManager itemManager)
 	{
+		this.sessionActors = sessionActors;
 		this.parent = parent;
 		this.itemManager = itemManager;
 
@@ -80,24 +70,6 @@ public class LandingPanel extends JPanel
 		this.eventList = createSessionEventList(sessionActors);
 		this.add(eventList, c);
 		c.gridy++;
-
-		// Add the Boss selection elements by category
-		Set<String> categories = Boss.categories;
-		for (String categoryName : categories)
-		{
-			// Category Name
-			JLabel name = new JLabel(categoryName);
-			name.setBorder(TOP_BORDER);
-			name.setForeground(Color.WHITE);
-			name.setVerticalAlignment(SwingConstants.CENTER);
-
-			MaterialTabGroup icons = createTabCategory(categoryName);
-
-			this.add(name, c);
-			c.gridy++;
-			this.add(icons, c);
-			c.gridy++;
-		}
 	}
 
 	private JPanel createSessionEventList(Set<String> options)
@@ -144,65 +116,15 @@ public class LandingPanel extends JPanel
 		return container;
 	}
 
-	// Creates icons used for tab selection for a specific category
-	private MaterialTabGroup createTabCategory(String categoryName)
-	{
-		MaterialTabGroup thisTabGroup = new MaterialTabGroup();
-		thisTabGroup.setLayout(new GridLayout(0, 4, 7, 7));
-		thisTabGroup.setBorder(TOP_BORDER);
-
-		ArrayList<Boss> categoryBosses = Boss.getByCategoryName(categoryName);
-		for (Boss boss : categoryBosses)
-		{
-			// Create tab (with hover effects/text)
-			MaterialTab materialTab = new MaterialTab("", thisTabGroup, null);
-			materialTab.setName(boss.getName());
-			materialTab.setToolTipText(boss.getBossName());
-			materialTab.addMouseListener(new MouseAdapter()
-			{
-				@Override
-				public void mouseEntered(MouseEvent e)
-				{
-					materialTab.setBackground(BUTTON_HOVER_COLOR);
-				}
-
-				@Override
-				public void mouseExited(MouseEvent e)
-				{
-					materialTab.setBackground(BUTTON_COLOR);
-				}
-			});
-
-			// Attach Icon to the Tab
-			AsyncBufferedImage image = itemManager.getImage(boss.getItemID());
-			Runnable resize = () ->
-			{
-				materialTab.setIcon(new ImageIcon(image.getScaledInstance(35, 35, Image.SCALE_SMOOTH)));
-				materialTab.setOpaque(true);
-				materialTab.setBackground(BUTTON_COLOR);
-				materialTab.setHorizontalAlignment(SwingConstants.CENTER);
-				materialTab.setVerticalAlignment(SwingConstants.CENTER);
-				materialTab.setPreferredSize(new Dimension(35, 35));
-			};
-			image.onChanged(resize);
-			resize.run();
-
-			materialTab.setOnSelectEvent(() ->
-			{
-				parent.showTabDisplay(boss.getBossName());
-				materialTab.unselect();
-				materialTab.setBackground(BACKGROUND_COLOR);
-				return true;
-			});
-
-			thisTabGroup.addTab(materialTab);
-		}
-
-		return thisTabGroup;
-	}
-
+	// Update UI to show new sessionActors
 	void setSessionActors(TreeSet<String> sessionActors)
 	{
+		if (this.sessionActors.equals(sessionActors))
+		{
+			return;
+		}
+
+		this.sessionActors = sessionActors;
 
 		SwingUtilities.invokeLater(() ->
 		{

@@ -31,7 +31,6 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeSet;
 import javax.inject.Inject;
 import javax.swing.ImageIcon;
@@ -73,8 +72,6 @@ public class LoggerPanel extends PluginPanel
 	private String currentTab = null;	// NPC Name
 
 	private JPanel title;
-	private JPanel footer;
-
 	private LandingPanel landingPanel;
 	private LootPanel lootPanel;
 
@@ -93,11 +90,6 @@ public class LoggerPanel extends PluginPanel
 		title.setBorder(TITLE_BORDER);
 		title.setLayout(new BorderLayout());
 		title.setBackground(BACKGROUND_COLOR);
-
-		footer = new JPanel();
-		footer.setBorder(TITLE_BORDER);
-		footer.setLayout(new BorderLayout());
-		footer.setBackground(BACKGROUND_COLOR);
 
 		createLandingPanel();
 	}
@@ -139,8 +131,6 @@ public class LoggerPanel extends PluginPanel
 
 
 		// Content Update
-		// Ensure stored data is up to date with file.
-		plugin.loadTabData(name);
 		// Grab Data to display from plugin
 		ArrayList<LootEntry> data = plugin.getData(name);
 
@@ -276,10 +266,7 @@ public class LoggerPanel extends PluginPanel
 	// Refresh the Loot Panel with updated data (requests the data from file)
 	private void refreshLootPanel(LootPanel lootPanel, String name)
 	{
-		// Refresh data for necessary tab
-		plugin.loadTabData(name);
-
-		// Recreate the loot panel
+		// Grab the data for this NPC
 		lootPanel.updateRecords(plugin.getData(name));
 
 		// Ensure changes are applied

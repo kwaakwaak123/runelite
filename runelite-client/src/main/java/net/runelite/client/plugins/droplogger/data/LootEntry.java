@@ -38,7 +38,7 @@ public class LootEntry
 	@Getter
 	private final String npcName;
 	@Getter
-	final List<DropEntry> drops;
+	final List<ItemStack> drops;
 
 	// Full Kill with Kill Count
 	public LootEntry(int npcId, String npcName, int kc, List drops)

@@ -39,8 +39,6 @@ import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemID;
 import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
-import net.runelite.client.plugins.droplogger.data.UniqueItem;
-import net.runelite.client.plugins.droplogger.data.DropEntry;
 import net.runelite.client.plugins.droplogger.data.LootEntry;
 import net.runelite.client.plugins.droplogger.data.LootRecord;
 import net.runelite.http.api.item.ItemPrice;
@@ -54,23 +52,20 @@ import static net.runelite.client.plugins.droplogger.ui.Constants.RECORDED_COUNT
 public class LootPanel extends JPanel
 {
 	private ArrayList<LootEntry> records;
-	private Map<Integer, ArrayList<UniqueItem>> uniqueMap;
-	private Map<Integer, LootRecord> consolidated;
 	private ItemManager itemManager;
+	private Map<Integer, LootRecord> consolidated;
 
-	public LootPanel(ArrayList<LootEntry> records, Map<Integer, ArrayList<UniqueItem>> uniqueMap, ItemManager itemManager)
+	public LootPanel(ArrayList<LootEntry> records, ItemManager itemManager)
 	{
 		this.records = records;
-		this.consolidated = new HashMap<>();
-		this.uniqueMap = uniqueMap;
 		this.itemManager = itemManager;
+		this.consolidated = new HashMap<>();
 
 		setLayout(new GridBagLayout());
 		setBorder(CONTENT_BORDER);
 		setBackground(BACKGROUND_COLOR);
 
 		createConsolidatedArray();
-		sortUniqueMap();
 		createPanel(this);
 	}
 
@@ -143,15 +138,6 @@ public class LootPanel extends JPanel
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 	}
 
-	// Sort UniqueItems Map by Key
-	private void sortUniqueMap()
-	{
-		this.uniqueMap = this.uniqueMap.entrySet()
-				.stream()
-				.sorted(Map.Entry.comparingByKey())
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
-	}
-
 	private void createPanel(LootPanel panel)
 	{
 		GridBagConstraints c = new GridBagConstraints();
@@ -159,14 +145,6 @@ public class LootPanel extends JPanel
 		c.weightx = 1;
 		c.gridx = 0;
 		c.gridy = 0;
-
-		// Attach all the Unique Items first
-		this.uniqueMap.forEach((setPosition, set) ->
-		{
-			UniqueItemPanel p = new UniqueItemPanel(set, this.consolidated, panel.itemManager);
-			panel.add(p, c);
-			c.gridy++;
-		});
 
 		// Attach Kill Count Panel
 		if (this.records.size() > 0)

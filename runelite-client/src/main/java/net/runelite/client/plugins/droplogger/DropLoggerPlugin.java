@@ -59,7 +59,6 @@ import net.runelite.client.game.loot.events.NpcLootReceived;
 import net.runelite.client.game.loot.events.PlayerLootReceived;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.plugins.droplogger.data.Boss;
 import net.runelite.client.plugins.droplogger.data.LootEntry;
 import net.runelite.client.plugins.droplogger.data.Pet;
 import net.runelite.client.plugins.droplogger.data.WatchNpcs;
@@ -98,7 +97,6 @@ public class DropLoggerPlugin extends Plugin
 	private ChatMessageManager chatMessageManager;
 
 	private NavigationButton navButton;
-	private BossLoggerWriter writer;
 	private LoggerPanel panel;
 
 	// Chat Message Regex
@@ -114,7 +112,6 @@ public class DropLoggerPlugin extends Plugin
 
 	// Mapping Variables
 	private Map<String, ArrayList<LootEntry>> lootMap = new HashMap<>(); // Store loot entries for each NPC/Boss name
-	private Map<String, String> filenameMap = new HashMap<>(); 			 // Stores filename for each NPC/Boss name
 	private Map<String, Integer> killcountMap = new HashMap<>(); 		 // Store kill count by name
 
 	@Getter
@@ -145,8 +142,6 @@ public class DropLoggerPlugin extends Plugin
 			.panel(panel)
 			.build();
 		this.pluginToolbar.addNavigation(navButton);
-
-		writer = new BossLoggerWriter(client, filenameMap);
 	}
 
 	@Override
@@ -164,39 +159,15 @@ public class DropLoggerPlugin extends Plugin
 	private void init()
 	{
 		// Create maps for easy management of certain features
-		Map<String, ArrayList<LootEntry>> mapLoot = new HashMap<>();
-		Map<String, String> mapFilename = new HashMap<>();
-		Map<String, Integer> mapKillcount = new HashMap<>();
-		for (Boss tab : Boss.values())
-		{
-			String name = tab.getBossName().toUpperCase();
-			// Loot Entries by Tab Name
-			ArrayList<LootEntry> array = new ArrayList<LootEntry>();
-			mapLoot.put(name, array);
-			// Filenames. Removes all spaces, periods, and apostrophes
-			String filename = tab.getName().replaceAll("( |'|\\.)", "").toLowerCase() + ".log";
-			mapFilename.put(name, filename);
-			// Kill Count
-			int killcount = 0;
-			mapKillcount.put(name, killcount);
-		}
-		lootMap = mapLoot;
-		killcountMap = mapKillcount;
-		filenameMap = mapFilename;
+		lootMap =  new HashMap<>();
+		killcountMap = new HashMap<>();
 
 		// Ensure we are using the requested message coloring for in-game messages
 		updateMessageColor();
 	}
 
-	public void loadTabData(String name)
-	{
-		loadLootEntries(name);
-	}
-
-	// Returns stored data by tab
 	public ArrayList<LootEntry> getData(String name)
 	{
-		// Loot Entries are stored on lootMap by boss name (upper cased)
 		return lootMap.get(name.toUpperCase());
 	}
 
@@ -215,36 +186,8 @@ public class DropLoggerPlugin extends Plugin
 		{
 			return pet.getPetID();
 		}
+
 		return -1;
-	}
-
-	// Keep the subscribe a bit cleaner, may be a better way to handle this
-	private void handleConfigChanged(String eventKey)
-	{
-		switch (eventKey)
-		{
-			case "chatMessageColor":
-				// Update in-game alert color
-				updateMessageColor();
-				dropLoggedAlert("Example Message");
-				return;
-			default:
-				break;
-		}
-	}
-
-	// Wrapper for changing local writing directory
-	private void updatePlayerFolder()
-	{
-		boolean changed = writer.updatePlayerFolder();
-		if (changed)
-		{
-			// Reset stored data
-			for (Boss boss : Boss.values())
-			{
-				lootMap.put(boss.getBossName().toUpperCase(), new ArrayList<>());
-			}
-		}
 	}
 
 	// All alerts from this plugin should use this function
@@ -270,59 +213,22 @@ public class DropLoggerPlugin extends Plugin
 		}
 	}
 
-	// Wrapper for writer.addLootEntry
 	private void addLootEntry(String name, LootEntry entry)
 	{
-		updatePlayerFolder();
 		name = name.toUpperCase();
-
-		// Update data inside plugin
 		ArrayList<LootEntry> loots = lootMap.get(name);
 		if (loots == null)
 		{
 			loots = new ArrayList<>();
 		}
+
 		loots.add(entry);
 		lootMap.put(name, loots);
-
-		boolean success = writer.addLootEntry(name, entry);
-
-		if (!success)
-		{
-			log.debug("Couldn't add entry to log file. (Name: {} | entry: {})", name, entry);
-		}
 	}
 
-	// Receive Loot from the necessary file
-	private synchronized void loadLootEntries(String name)
-	{
-		updatePlayerFolder();
-		name = name.toUpperCase();
-
-		ArrayList<LootEntry> data = writer.loadLootEntries(name);
-
-		if (data == null)
-		{
-			log.debug("Couldn't find log file for: {}", name);
-			lootMap.put(name, new ArrayList<>());
-			return;
-		}
-
-		// Update Loot Map with new data
-		lootMap.put(name, data);
-
-		// Update Killcount map with latest value
-		if (data.size() > 0)
-		{
-			int killcount = data.get(data.size() - 1).getKillCount();
-			killcountMap.put(name, killcount);
-		}
-	}
-
-	// Add Loot Entry to the necessary file
+	// Add drop to last Loot Entry in map or create if doesn't exist.
 	private void addDropToLastLootEntry(String name, Item newDrop)
 	{
-		// Update data inside plugin
 		String nameCased = name.toUpperCase();
 		ArrayList<LootEntry> loots = lootMap.get(nameCased);
 		if (loots == null || loots.size() == 0)
@@ -338,22 +244,9 @@ public class DropLoggerPlugin extends Plugin
 			entry.addDropItem(newDrop);
 			loots.add(loots.size() - 1, entry);
 		}
+
 		// Ensure updates is applied, may not be necessary
 		lootMap.put(nameCased, loots);
-
-		updatePlayerFolder();
-
-		rewriteLootFile(nameCased, loots);
-	}
-
-	// Wrapper for writer.rewriteLootFile
-	private void rewriteLootFile(String name, ArrayList<LootEntry> loots)
-	{
-		boolean success = writer.rewriteLootFile(name, loots);
-		if (!success)
-		{
-			log.debug("Couldn't add drop to last loot entry");
-		}
 	}
 
 	// Upon cleaning an Unsired add the item to the previous LootEntry
@@ -364,12 +257,11 @@ public class DropLoggerPlugin extends Plugin
 		addDropToLastLootEntry(Boss.ABYSSAL_SIRE.getBossName(), drop);
 	}
 
-	// Clear stored data for specific boss
 	public void clearData(String name)
 	{
 		name = name.toUpperCase();
-		log.debug("Clearing data for NPCs: " + name);
-		writer.clearLootFile(name);
+		lootMap.put(name, new ArrayList<>());
+		log.debug("Cleared data for NPCs named: {}", name);
 	}
 
 	// Updates in-game alert chat color based on config settings
@@ -495,7 +387,16 @@ public class DropLoggerPlugin extends Plugin
 			return;
 		}
 
-		handleConfigChanged(event.getKey());
+		switch (event.getKey())
+		{
+			case "chatMessageColor":
+				// Update in-game alert color
+				updateMessageColor();
+				dropLoggedAlert("Example Message");
+				return;
+			default:
+				break;
+		}
 	}
 
 	// Chat Message parsing kill count value and/or pet drop
