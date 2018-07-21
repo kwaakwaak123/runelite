@@ -1419,13 +1419,4 @@ public interface Client extends GameEngine
 	 * @param speed speed
 	 */
 	void setOculusOrbNormalSpeed(int speed);
-
-	/**
-	 * Creates a new Item
-	 *
-	 * @param id Item ID
-	 * @param quantity Item quantity
-	 * @return new Item
-	 */
-	Item createItem(int id, int quantity);
 }
