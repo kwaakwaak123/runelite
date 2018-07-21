@@ -63,7 +63,36 @@ public class LootManager
 		NPC npc = npcDespawned.getNpc();
 		if (!npc.isDead())
 		{
-			return;
+			int id = npc.getId();
+			switch (id)
+			{
+				case NpcID.GARGOYLE:
+				case NpcID.GARGOYLE_413:
+				case NpcID.GARGOYLE_1543:
+				case NpcID.MARBLE_GARGOYLE:
+				case NpcID.MARBLE_GARGOYLE_7408:
+
+				case NpcID.ROCKSLUG:
+				case NpcID.ROCKSLUG_422:
+				case NpcID.GIANT_ROCKSLUG:
+
+				case NpcID.SMALL_LIZARD:
+				case NpcID.SMALL_LIZARD_463:
+				case NpcID.DESERT_LIZARD:
+				case NpcID.DESERT_LIZARD_460:
+				case NpcID.DESERT_LIZARD_461:
+				case NpcID.LIZARD:
+
+				case NpcID.ZYGOMITE:
+				case NpcID.ZYGOMITE_474:
+				case NpcID.ANCIENT_ZYGOMITE:
+
+					// these monsters die with >0 hp, so we just look for coincident
+					// item spawn with despawn
+					break;
+				default:
+					return;
+			}
 		}
 
 		processNpcLoop(npc);
@@ -95,7 +124,10 @@ public class LootManager
 				}
 			}
 		}
-		if (allItems.isEmpty()) return;
+		if (allItems.isEmpty())
+		{
+			return;
+		}
 		NpcLootReceived npcLootReceived = new NpcLootReceived(npc, allItems);
 		eventBus.post(npcLootReceived);
 	}
@@ -126,7 +158,6 @@ public class LootManager
 			log.debug("Drop from {}: {}", player.getName(), item.getId());
 		}
 
-		if (items.isEmpty()) return;
 		eventBus.post(new PlayerLootReceived(player, items));
 	}
 

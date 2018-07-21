@@ -27,10 +27,11 @@ package net.runelite.client.plugins.loottracker;
 
 import com.google.common.eventbus.Subscribe;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
@@ -141,11 +142,9 @@ public class LootTrackerPlugin extends Plugin
 		if (container != null)
 		{
 			// Convert container items to collection of ItemStack
-			Collection<ItemStack> items = new ArrayList<>();
-			for (Item item : container.getItems())
-			{
-				items.add(new ItemStack(item.getId(), item.getQuantity()));
-			}
+			Collection<ItemStack> items = Arrays.stream(container.getItems())
+				.map(item -> new ItemStack(item.getId(), item.getQuantity()))
+				.collect(Collectors.toList());
 
 			if (!items.isEmpty())
 			{
