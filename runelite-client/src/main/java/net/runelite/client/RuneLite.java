@@ -223,7 +223,7 @@ public class RuneLite
 			// Inject members into client
 			injector.injectMembers(client);
 		}
-		
+
 		// Load user configuration
 		configManager.load();
 

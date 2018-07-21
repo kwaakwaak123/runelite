@@ -26,18 +26,32 @@ package net.runelite.client.plugins.loottracker;
 
 import com.google.common.eventbus.Subscribe;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
+import net.runelite.api.Client;
+import net.runelite.api.InventoryID;
+import net.runelite.api.Item;
+import net.runelite.api.ItemContainer;
 import net.runelite.api.NPC;
+import net.runelite.api.Varbits;
+import net.runelite.api.events.ChatMessage;
+import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.events.WidgetLoaded;
+import net.runelite.api.widgets.WidgetID;
 import net.runelite.client.events.NpcLootReceived;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.PluginToolbar;
+import net.runelite.client.util.Text;
 
 @PluginDescriptor(
 	name = "Loot Tracker",
@@ -51,8 +65,17 @@ public class LootTrackerPlugin extends Plugin
 	@Inject
 	private PluginToolbar pluginToolbar;
 
+	@Inject
+	private Client client;
+
 	private LootTrackerPanel panel;
 	private NavigationButton navButton;
+
+	// Activity/Event loot handling
+	private static final Pattern CLUE_SCROLL_PATTERN = Pattern.compile("You have completed [0-9]+ ([a-z]+) Treasure Trails.");
+	private boolean hasOpenedRaidsRewardChest = false;
+	private boolean hasOpenedTheatreOfBloodRewardChest = false;
+	private String eventType = null;
 
 	@Override
 	protected void startUp() throws Exception
@@ -90,5 +113,119 @@ public class LootTrackerPlugin extends Plugin
 		final String name = npc.getName();
 		final int combat = npc.getCombatLevel();
 		SwingUtilities.invokeLater(() -> panel.addLog(name, combat, items.toArray(new ItemStack[items.size()])));
+	}
+
+	@Subscribe
+	public void onVarbitChanged(VarbitChanged event)
+	{
+		// Reset chest opened flag if not inside relevant area.
+		if (client.getVar(Varbits.IN_RAID) == 0)
+		{
+			this.hasOpenedRaidsRewardChest = false;
+		}
+
+		int theatreState = client.getVar(Varbits.THEATRE_OF_BLOOD);
+		if (theatreState == 0 || theatreState == 1)
+		{
+			this.hasOpenedTheatreOfBloodRewardChest = false;
+		}
+	}
+
+	@Subscribe
+	public void onWidgetLoaded(WidgetLoaded event)
+	{
+		ItemContainer container = null;
+		switch (event.getGroupId())
+		{
+			case (WidgetID.BARROWS_REWARD_GROUP_ID):
+				eventType = "Barrows";
+				container = client.getItemContainer(InventoryID.BARROWS_REWARD);
+				break;
+			case (WidgetID.CHAMBERS_OF_XERIC_REWARD_GROUP_ID):
+				if (hasOpenedRaidsRewardChest)
+				{
+					return;
+				}
+
+				eventType = "Chambers of Xeric";
+				container = client.getItemContainer(InventoryID.CHAMBERS_OF_XERIC_CHEST);
+				break;
+			case (WidgetID.THEATRE_OF_BLOOD_GROUP_ID):
+				if (hasOpenedTheatreOfBloodRewardChest)
+				{
+					return;
+				}
+
+				eventType = "Theatre of Blood";
+				container = client.getItemContainer(InventoryID.THEATRE_OF_BLOOD_CHEST);
+				break;
+			case (WidgetID.CLUE_SCROLL_REWARD_GROUP_ID):
+				// event type should be set via ChatMessage for clue scrolls.
+				// Clue Scrolls use same InventoryID as Barrows
+				container = client.getItemContainer(InventoryID.BARROWS_REWARD);
+				break;
+			default:
+				return;
+		}
+
+		if (container != null)
+		{
+			// Convert container items to collection of ItemStack
+			Collection<ItemStack> items = new ArrayList<>();
+			for (Item item : container.getItems())
+			{
+				items.add(new ItemStack(item.getId(), item.getQuantity()));
+			}
+
+			if (!items.isEmpty())
+			{
+				log.debug("Loot Received from Event: {}", eventType);
+				for (ItemStack item : items)
+				{
+					log.debug("Item Received: {}x {}", item.getQuantity(), item.getId());
+				}
+				SwingUtilities.invokeLater(() -> panel.addLog(eventType, -1, items.toArray(new ItemStack[items.size()])));
+			}
+			else
+			{
+				log.debug("No items to find for Event: {} | Container: {}", eventType, container);
+			}
+		}
+	}
+
+	@Subscribe
+	public void onChatMessage(ChatMessage event)
+	{
+		if (event.getType() != ChatMessageType.SERVER && event.getType() != ChatMessageType.FILTERED)
+		{
+			return;
+		}
+
+		String chatMessage = event.getMessage();
+
+		// Check if message is for a clue scroll reward
+		Matcher m = CLUE_SCROLL_PATTERN.matcher(Text.removeTags(chatMessage));
+		if (m.find())
+		{
+			String type = m.group(1).toLowerCase();
+			switch (type)
+			{
+				case "easy":
+					eventType = "Clue Scroll (Easy)";
+					break;
+				case "medium":
+					eventType = "Clue Scroll (Medium)";
+					break;
+				case "hard":
+					eventType = "Clue Scroll (Hard)";
+					break;
+				case "elite":
+					eventType = "Clue Scroll (Elite)";
+					break;
+				case "master":
+					eventType = "Clue Scroll (Master)";
+					break;
+			}
+		}
 	}
 }
