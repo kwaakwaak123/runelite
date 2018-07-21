@@ -32,7 +32,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import javax.annotation.Nullable;
 import javax.imageio.ImageIO;
 import javax.inject.Inject;
 import javax.swing.ImageIcon;
@@ -42,9 +41,6 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.InventoryID;
-import net.runelite.api.ItemContainer;
 import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemStack;
@@ -65,10 +61,6 @@ public class LootTrackerPanel extends PluginPanel
 	private static final ImageIcon SETTINGS_CLICK_ICON;
 
 	private final JPanel logsContainer = new JPanel();
-
-	@Inject
-	@Nullable
-	private Client client;
 
 	@Inject
 	private ItemManager itemManager;
@@ -156,6 +148,8 @@ public class LootTrackerPanel extends PluginPanel
 
 	void addLog(String npcName, int npcLevel, ItemStack[] items)
 	{
+		assert SwingUtilities.isEventDispatchThread();
+
 		JPanel logContainer = new JPanel();
 		logContainer.setLayout(new BorderLayout(0, 1));
 
@@ -225,21 +219,7 @@ public class LootTrackerPanel extends PluginPanel
 
 	public void reset()
 	{
-		//TODO reset the data collector
 		logsContainer.removeAll();
 	}
-
-	private void testPopulate()
-	{
-		final ItemContainer inv = client.getItemContainer(InventoryID.INVENTORY);
-
-		if (inv == null)
-		{
-			return;
-		}
-
-		//	addLog("Demonic gorilla", 135, inv.getItems());
-	}
-
 
 }
