@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018, Psikoi <https://github.com/psikoi>
+ * Copyright (c) 2018, Adam <Adam@sigterm.info>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,9 +41,7 @@ import net.runelite.api.InventoryID;
 import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.NPC;
-import net.runelite.api.Varbits;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.WidgetID;
 import net.runelite.client.events.NpcLootReceived;
@@ -55,13 +54,15 @@ import net.runelite.client.util.Text;
 
 @PluginDescriptor(
 	name = "Loot Tracker",
-	description = "", //TODO write plugin description
-	tags = {"loot", "drops"}, //TODO write plugin tags
-	loadWhenOutdated = true
+	description = "Tracks loot from monsters and minigames",
+	tags = {"drops"}
 )
 @Slf4j
 public class LootTrackerPlugin extends Plugin
 {
+	// Activity/Event loot handling
+	private static final Pattern CLUE_SCROLL_PATTERN = Pattern.compile("You have completed [0-9]+ ([a-z]+) Treasure Trails.");
+
 	@Inject
 	private PluginToolbar pluginToolbar;
 
@@ -70,10 +71,7 @@ public class LootTrackerPlugin extends Plugin
 
 	private LootTrackerPanel panel;
 	private NavigationButton navButton;
-
-	// Activity/Event loot handling
-	private static final Pattern CLUE_SCROLL_PATTERN = Pattern.compile("You have completed [0-9]+ ([a-z]+) Treasure Trails.");
-	private String eventType = null;
+	private String eventType;
 
 	@Override
 	protected void startUp() throws Exception
