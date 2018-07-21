@@ -50,6 +50,7 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.discord.DiscordService;
 import net.runelite.client.game.ClanManager;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.game.LootManager;
 import net.runelite.client.menus.MenuManager;
 import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.ui.ClientUI;
@@ -139,6 +140,9 @@ public class RuneLite
 
 	@Inject
 	private WorldMapOverlay worldMapOverlay;
+
+	@Inject
+	private LootManager lootManager;
 
 	Client client;
 
@@ -243,6 +247,7 @@ public class RuneLite
 		if (this.client != null)
 		{
 			eventBus.register(itemManager.get());
+			eventBus.register(lootManager);
 		}
 
 		// Load user configuration
