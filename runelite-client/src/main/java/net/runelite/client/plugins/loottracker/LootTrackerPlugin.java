@@ -73,8 +73,6 @@ public class LootTrackerPlugin extends Plugin
 
 	// Activity/Event loot handling
 	private static final Pattern CLUE_SCROLL_PATTERN = Pattern.compile("You have completed [0-9]+ ([a-z]+) Treasure Trails.");
-	private boolean hasOpenedRaidsRewardChest = false;
-	private boolean hasOpenedTheatreOfBloodRewardChest = false;
 	private String eventType = null;
 
 	@Override
@@ -116,22 +114,6 @@ public class LootTrackerPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onVarbitChanged(VarbitChanged event)
-	{
-		// Reset chest opened flag if not inside relevant area.
-		if (client.getVar(Varbits.IN_RAID) == 0)
-		{
-			this.hasOpenedRaidsRewardChest = false;
-		}
-
-		int theatreState = client.getVar(Varbits.THEATRE_OF_BLOOD);
-		if (theatreState == 0 || theatreState == 1)
-		{
-			this.hasOpenedTheatreOfBloodRewardChest = false;
-		}
-	}
-
-	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
 		ItemContainer container = null;
@@ -142,20 +124,10 @@ public class LootTrackerPlugin extends Plugin
 				container = client.getItemContainer(InventoryID.BARROWS_REWARD);
 				break;
 			case (WidgetID.CHAMBERS_OF_XERIC_REWARD_GROUP_ID):
-				if (hasOpenedRaidsRewardChest)
-				{
-					return;
-				}
-
 				eventType = "Chambers of Xeric";
 				container = client.getItemContainer(InventoryID.CHAMBERS_OF_XERIC_CHEST);
 				break;
 			case (WidgetID.THEATRE_OF_BLOOD_GROUP_ID):
-				if (hasOpenedTheatreOfBloodRewardChest)
-				{
-					return;
-				}
-
 				eventType = "Theatre of Blood";
 				container = client.getItemContainer(InventoryID.THEATRE_OF_BLOOD_CHEST);
 				break;
