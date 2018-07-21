@@ -4,7 +4,9 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -12,13 +14,16 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Item;
 import net.runelite.api.NPC;
+import net.runelite.api.Player;
 import net.runelite.api.Tile;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemQuantityChanged;
 import net.runelite.api.events.ItemSpawned;
 import net.runelite.api.events.NpcDespawned;
+import net.runelite.api.events.PlayerDespawned;
 import net.runelite.client.events.NpcLootReceived;
+import net.runelite.client.events.PlayerLootReceived;
 
 @Singleton
 @Slf4j
@@ -50,6 +55,8 @@ public class LootManager
 		int y = location.getSceneY();
 		int size = npc.getComposition().getSize();
 
+		// some npcs drop items onto multiple tiles
+		List<ItemStack> allItems = new ArrayList<>();
 		for (int i = 0; i < size; ++i)
 		{
 			for (int j = 0; j < size; ++j)
@@ -62,12 +69,40 @@ public class LootManager
 					{
 						log.debug("Drop from {}: {}", npc.getName(), item.getId());
 					}
-					NpcLootReceived npcLootReceived = new NpcLootReceived(npc, items);
-					eventBus.post(npcLootReceived);
-					break;
+					allItems.addAll(items);
 				}
 			}
 		}
+		NpcLootReceived npcLootReceived = new NpcLootReceived(npc, allItems);
+		eventBus.post(npcLootReceived);
+	}
+
+	@Subscribe
+	public void onPlayerDespawn(PlayerDespawned playerDespawned) {
+		Player player = playerDespawned.getPlayer();
+		final Client client = this.client.get();
+		final LocalPoint location = LocalPoint.fromWorld(client, player.getWorldLocation());
+		if (location == null)
+		{
+			return;
+		}
+
+		final int x = location.getSceneX();
+		final int y = location.getSceneY();
+		final int packed = x << 8 | y;
+		final Collection<ItemStack> items = itemSpawns.get(packed);
+
+		if (items.isEmpty())
+		{
+			return;
+		}
+
+		for (ItemStack item : items)
+		{
+			log.debug("Drop from {}: {}", player.getName(), item.getId());
+		}
+
+		eventBus.post(new PlayerLootReceived(player, items));
 	}
 
 	@Subscribe
