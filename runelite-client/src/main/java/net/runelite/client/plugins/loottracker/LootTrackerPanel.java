@@ -44,10 +44,10 @@ import javax.swing.border.EmptyBorder;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.InventoryID;
-import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
 import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.game.ItemStack;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
@@ -154,7 +154,7 @@ public class LootTrackerPanel extends PluginPanel
 		add(container);
 	}
 
-	public void addLog(String npcName, int npcLevel, Item... items)
+	void addLog(String npcName, int npcLevel, ItemStack[] items)
 	{
 		JPanel logContainer = new JPanel();
 		logContainer.setLayout(new BorderLayout(0, 1));
@@ -191,7 +191,7 @@ public class LootTrackerPanel extends PluginPanel
 
 			if (i < items.length)
 			{
-				Item item = items[i];
+				ItemStack item = items[i];
 
 				AsyncBufferedImage icon = itemManager.getImage(item.getId(), item.getQuantity(), item.getQuantity() > 1);
 				Runnable addImage = () ->
@@ -238,6 +238,8 @@ public class LootTrackerPanel extends PluginPanel
 			return;
 		}
 
-		addLog("Demonic gorilla", 135, inv.getItems());
+		//	addLog("Demonic gorilla", 135, inv.getItems());
 	}
+
+
 }

@@ -24,10 +24,16 @@
  */
 package net.runelite.client.plugins.loottracker;
 
+import com.google.common.eventbus.Subscribe;
 import java.awt.image.BufferedImage;
+import java.util.Collection;
 import javax.imageio.ImageIO;
 import javax.inject.Inject;
+import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.NPC;
+import net.runelite.client.events.NpcLootReceived;
+import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.NavigationButton;
@@ -74,5 +80,15 @@ public class LootTrackerPlugin extends Plugin
 	protected void shutDown()
 	{
 		pluginToolbar.removeNavigation(navButton);
+	}
+
+	@Subscribe
+	public void onNpcLootReceived(NpcLootReceived npcLootReceived)
+	{
+		NPC npc = npcLootReceived.getNpc();
+		Collection<ItemStack> items = npcLootReceived.getItems();
+		final String name = npc.getName();
+		final int combat = npc.getCombatLevel();
+		SwingUtilities.invokeLater(() -> panel.addLog(name, combat, items.toArray(new ItemStack[items.size()])));
 	}
 }
