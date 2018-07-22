@@ -89,7 +89,7 @@ public class LootTrackerPlugin extends Plugin
 		navButton = NavigationButton.builder()
 			.tooltip("Loot Tracker")
 			.icon(icon)
-			.priority(7)
+			.priority(5)
 			.panel(panel)
 			.build();
 

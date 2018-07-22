@@ -27,6 +27,8 @@ package net.runelite.client.plugins.loottracker;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -34,9 +36,11 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 import javax.inject.Inject;
+import javax.swing.Box;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
@@ -45,7 +49,6 @@ import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.SwingUtil;
@@ -59,6 +62,8 @@ public class LootTrackerPanel extends PluginPanel
 	private static final ImageIcon SETTINGS_ICON;
 	private static final ImageIcon RESET_CLICK_ICON;
 	private static final ImageIcon SETTINGS_CLICK_ICON;
+
+	private final GridBagConstraints constraints = new GridBagConstraints();
 
 	private final JPanel logsContainer = new JPanel();
 
@@ -88,15 +93,18 @@ public class LootTrackerPanel extends PluginPanel
 
 	void init()
 	{
-		JPanel container = new JPanel(new BorderLayout(0, 10));
+		getScrollPane().setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 
-		JPanel topBar = new JPanel(new BorderLayout());
+		setLayout(new BorderLayout());
+		setBorder(new EmptyBorder(10, 10, 10, 11));
 
-		final JLabel pluginTitle = new JLabel("Loot Tracker");
+		JPanel headerPanel = new JPanel(new BorderLayout());
+		headerPanel.setBorder(new EmptyBorder(1, 0, 10, 0));
+
+		JLabel pluginTitle = new JLabel("Loot Tracker");
 		pluginTitle.setForeground(Color.WHITE);
 
 		JPanel actionsContainer = new JPanel(new GridLayout(1, 2, 10, 0));
-		actionsContainer.setOpaque(true);
 
 		final JLabel reset = new JLabel(RESET_ICON);
 		reset.addMouseListener(new MouseAdapter()
@@ -135,15 +143,22 @@ public class LootTrackerPanel extends PluginPanel
 		actionsContainer.add(reset);
 		actionsContainer.add(settings);
 
-		topBar.add(pluginTitle, BorderLayout.WEST);
-		topBar.add(actionsContainer, BorderLayout.EAST);
+		headerPanel.add(pluginTitle, BorderLayout.WEST);
+		headerPanel.add(actionsContainer, BorderLayout.EAST);
 
-		logsContainer.setLayout(new DynamicGridLayout(0, 1, 0, 10));
+		JPanel centerPanel = new JPanel(new BorderLayout());
 
-		container.add(topBar, BorderLayout.NORTH);
-		container.add(logsContainer, BorderLayout.CENTER);
+		logsContainer.setLayout(new GridBagLayout());
 
-		add(container);
+		constraints.fill = GridBagConstraints.HORIZONTAL;
+		constraints.weightx = 1;
+		constraints.gridx = 0;
+		constraints.gridy = 0;
+
+		centerPanel.add(logsContainer, BorderLayout.CENTER);
+
+		add(headerPanel, BorderLayout.NORTH);
+		add(centerPanel, BorderLayout.CENTER);
 	}
 
 	void addLog(String npcName, int npcLevel, ItemStack[] items)
@@ -173,14 +188,14 @@ public class LootTrackerPanel extends PluginPanel
 			logTitle.add(npcLevelLabel, BorderLayout.CENTER);
 		}
 
-		int rowSize = (items.length / ITEMS_PER_ROW) + 1;
+		// calculates how many rows need to be display to fit all items
+		int rowSize = ((items.length % ITEMS_PER_ROW == 0) ? 0 : 1) + items.length / ITEMS_PER_ROW;
 
-		JPanel itemContainer = new JPanel(new GridLayout(rowSize, ITEMS_PER_ROW));
+		JPanel itemContainer = new JPanel(new GridLayout(rowSize, ITEMS_PER_ROW, 1, 1));
 
 		for (int i = 0; i < rowSize * ITEMS_PER_ROW; i++)
 		{
 			JPanel slotContainer = new JPanel();
-			slotContainer.setPreferredSize(new Dimension(40, 40));
 			slotContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
 			if (i < items.length)
@@ -211,15 +226,17 @@ public class LootTrackerPanel extends PluginPanel
 		logContainer.add(logTitle, BorderLayout.NORTH);
 		logContainer.add(itemContainer, BorderLayout.CENTER);
 
-		logsContainer.add(logContainer);
+		logsContainer.add(logContainer, constraints);
+		constraints.gridy++;
 
-		logsContainer.revalidate();
-		logsContainer.repaint();
+		logsContainer.add(Box.createRigidArea(new Dimension(0, 10)), constraints);
+		constraints.gridy++;
 	}
 
 	public void reset()
 	{
 		logsContainer.removeAll();
+		logsContainer.revalidate();
+		logsContainer.repaint();
 	}
-
 }
