@@ -33,7 +33,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import java.awt.Dimension;
 import java.awt.GridLayout;
 
 public class ItemGridPanel extends JPanel
@@ -42,14 +41,13 @@ public class ItemGridPanel extends JPanel
 
 	public ItemGridPanel(ItemStack[] items, ItemManager itemManager)
 	{
-		int rowSize = (items.length / ITEMS_PER_ROW) + 1;
+		int rowSize = ((items.length % ITEMS_PER_ROW == 0) ? 0 : 1) + items.length / ITEMS_PER_ROW;
 
-		this.setLayout(new GridLayout(rowSize, ITEMS_PER_ROW));
+		this.setLayout(new GridLayout(rowSize, ITEMS_PER_ROW, 1, 1));
 
 		for (int i = 0; i < rowSize * ITEMS_PER_ROW; i++)
 		{
 			JPanel slotContainer = new JPanel();
-			slotContainer.setPreferredSize(new Dimension(40, 40));
 			slotContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
 			if (i < items.length)

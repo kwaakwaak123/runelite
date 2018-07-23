@@ -26,6 +26,8 @@ package net.runelite.client.plugins.loottracker;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -39,12 +41,13 @@ import javax.inject.Inject;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.loottracker.data.LootRecord;
 import net.runelite.client.plugins.loottracker.ui.LootRecordPanel;
-import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.SwingUtil;
 
@@ -55,6 +58,8 @@ public class LootTrackerPanel extends PluginPanel
 	private static final ImageIcon SETTINGS_ICON;
 	private static final ImageIcon RESET_CLICK_ICON;
 	private static final ImageIcon SETTINGS_CLICK_ICON;
+
+	private final GridBagConstraints constraints = new GridBagConstraints();
 
 	private final JPanel logsContainer = new JPanel();
 	private final List<LootRecord> records = new ArrayList<>();
@@ -89,15 +94,18 @@ public class LootTrackerPanel extends PluginPanel
 	{
 		this.config = config;
 
-		JPanel container = new JPanel(new BorderLayout(0, 10));
+		getScrollPane().setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 
-		JPanel topBar = new JPanel(new BorderLayout());
+		setLayout(new BorderLayout());
+		setBorder(new EmptyBorder(10, 10, 10, 11));
 
-		final JLabel pluginTitle = new JLabel("Loot Tracker");
+		JPanel headerPanel = new JPanel(new BorderLayout());
+		headerPanel.setBorder(new EmptyBorder(1, 0, 10, 0));
+
+		JLabel pluginTitle = new JLabel("Loot Tracker");
 		pluginTitle.setForeground(Color.WHITE);
 
 		JPanel actionsContainer = new JPanel(new GridLayout(1, 2, 10, 0));
-		actionsContainer.setOpaque(true);
 
 		final JLabel reset = new JLabel(RESET_ICON);
 		reset.addMouseListener(new MouseAdapter()
@@ -136,15 +144,22 @@ public class LootTrackerPanel extends PluginPanel
 		actionsContainer.add(reset);
 		actionsContainer.add(settings);
 
-		topBar.add(pluginTitle, BorderLayout.WEST);
-		topBar.add(actionsContainer, BorderLayout.EAST);
+		headerPanel.add(pluginTitle, BorderLayout.WEST);
+		headerPanel.add(actionsContainer, BorderLayout.EAST);
 
-		logsContainer.setLayout(new DynamicGridLayout(0, 1, 0, 10));
+		JPanel centerPanel = new JPanel(new BorderLayout());
 
-		container.add(topBar, BorderLayout.NORTH);
-		container.add(logsContainer, BorderLayout.CENTER);
+		logsContainer.setLayout(new GridBagLayout());
 
-		add(container);
+		constraints.fill = GridBagConstraints.HORIZONTAL;
+		constraints.weightx = 1;
+		constraints.gridx = 0;
+		constraints.gridy = 0;
+
+		centerPanel.add(logsContainer, BorderLayout.CENTER);
+
+		add(headerPanel, BorderLayout.NORTH);
+		add(centerPanel, BorderLayout.CENTER);
 	}
 
 	void addLootRecord(LootRecord entry)
@@ -156,7 +171,8 @@ public class LootTrackerPanel extends PluginPanel
 		// Just add the Loot Record to the Panel if Ordering by Kill
 		if (config.monsterDisplaySetting() == LootTrackerConfig.MonsterDisplays.KILL_ORDER)
 		{
-			logsContainer.add(new LootRecordPanel(entry, itemManager, config));
+			logsContainer.add(new LootRecordPanel(entry, itemManager, config), constraints);
+			constraints.gridy++;
 		}
 		else
 		{
@@ -174,17 +190,21 @@ public class LootTrackerPanel extends PluginPanel
 
 			for (LootRecord r : records)
 			{
+				LootRecord rec = null;
 				if (config.itemGroupingSetting() == LootTrackerConfig.Groupings.CONSOLIDATED)
 				{
-					LootRecord combined = LootRecord.consildateDropEntries(r);
-					logsContainer.add(new LootRecordPanel(combined, itemManager, config));
+					rec = LootRecord.consildateDropEntries(r);
 				}
 				else if (config.itemGroupingSetting() == LootTrackerConfig.Groupings.INDIVIDUAL)
 				{
-					logsContainer.add(new LootRecordPanel(r, itemManager, config));
+					rec = r;
 				}
+
+				logsContainer.add(new LootRecordPanel(rec, itemManager, config), constraints);
+				constraints.gridy++;
 			}
 		}
+
 		logsContainer.revalidate();
 		logsContainer.repaint();
 	}
@@ -192,6 +212,8 @@ public class LootTrackerPanel extends PluginPanel
 	public void reset()
 	{
 		logsContainer.removeAll();
+		logsContainer.revalidate();
+		logsContainer.repaint();
 	}
 
 }
