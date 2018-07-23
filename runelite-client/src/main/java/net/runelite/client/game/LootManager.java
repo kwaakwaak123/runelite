@@ -1,8 +1,8 @@
 package net.runelite.client.game;
 
-import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.ListMultimap;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import java.util.ArrayList;
@@ -46,7 +46,7 @@ public class LootManager
 
 	private final EventBus eventBus;
 	private final Provider<Client> client;
-	private final Multimap<Integer, ItemStack> itemSpawns = HashMultimap.create();
+	private final ListMultimap<Integer, ItemStack> itemSpawns = ArrayListMultimap.create();
 	private WorldPoint playerLocationLastTick;
 	private WorldPoint krakenPlayerLocation;
 
