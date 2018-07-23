@@ -26,44 +26,43 @@ package net.runelite.client.plugins.loottracker;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import javax.imageio.ImageIO;
 import javax.inject.Inject;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import javax.swing.border.EmptyBorder;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
-import net.runelite.client.game.ItemStack;
-import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.plugins.loottracker.data.LootRecord;
+import net.runelite.client.plugins.loottracker.ui.LootRecordPanel;
 import net.runelite.client.ui.DynamicGridLayout;
-import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.SwingUtil;
 
 @Slf4j
 public class LootTrackerPanel extends PluginPanel
 {
-	private static final int ITEMS_PER_ROW = 5;
-
 	private static final ImageIcon RESET_ICON;
 	private static final ImageIcon SETTINGS_ICON;
 	private static final ImageIcon RESET_CLICK_ICON;
 	private static final ImageIcon SETTINGS_CLICK_ICON;
 
 	private final JPanel logsContainer = new JPanel();
+	private final List<LootRecord> records = new ArrayList<>();
 
 	@Inject
 	private ItemManager itemManager;
+
+	private LootTrackerConfig config;
 
 	static
 	{
@@ -86,8 +85,10 @@ public class LootTrackerPanel extends PluginPanel
 		}
 	}
 
-	void init()
+	void init(LootTrackerConfig config)
 	{
+		this.config = config;
+
 		JPanel container = new JPanel(new BorderLayout(0, 10));
 
 		JPanel topBar = new JPanel(new BorderLayout());
@@ -146,73 +147,44 @@ public class LootTrackerPanel extends PluginPanel
 		add(container);
 	}
 
-	void addLog(String npcName, int npcLevel, ItemStack[] items)
+	void addLootRecord(LootRecord entry)
 	{
 		assert SwingUtilities.isEventDispatchThread();
 
-		JPanel logContainer = new JPanel();
-		logContainer.setLayout(new BorderLayout(0, 1));
+		this.records.add(entry);
 
-		JPanel logTitle = new JPanel(new BorderLayout(5, 0));
-		logTitle.setBorder(new EmptyBorder(7, 7, 7, 7));
-		logTitle.setBackground(ColorScheme.DARKER_GRAY_COLOR.darker());
-
-		JLabel npcNameLabel = new JLabel(npcName);
-		npcNameLabel.setFont(FontManager.getRunescapeSmallFont());
-		npcNameLabel.setForeground(Color.WHITE);
-
-		logTitle.add(npcNameLabel, BorderLayout.WEST);
-
-		// For events outside of npc drops (barrows, raids, etc) the level should be -1
-		if (npcLevel > -1)
+		// Just add the Loot Record to the Panel if Ordering by Kill
+		if (config.monsterDisplaySetting() == LootTrackerConfig.MonsterDisplays.KILL_ORDER)
 		{
-			JLabel npcLevelLabel = new JLabel("(lvl. " + npcLevel + ")");
-			npcLevelLabel.setFont(FontManager.getRunescapeSmallFont());
-			npcLevelLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-
-			logTitle.add(npcLevelLabel, BorderLayout.CENTER);
+			logsContainer.add(new LootRecordPanel(entry, itemManager, config));
 		}
-
-		int rowSize = (items.length / ITEMS_PER_ROW) + 1;
-
-		JPanel itemContainer = new JPanel(new GridLayout(rowSize, ITEMS_PER_ROW));
-
-		for (int i = 0; i < rowSize * ITEMS_PER_ROW; i++)
+		else
 		{
-			JPanel slotContainer = new JPanel();
-			slotContainer.setPreferredSize(new Dimension(40, 40));
-			slotContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+			reset();
 
-			if (i < items.length)
+			Collection<LootRecord> records = new ArrayList<>();
+			if (config.monsterDisplaySetting() == LootTrackerConfig.MonsterDisplays.NAME)
 			{
-				ItemStack item = items[i];
-
-				AsyncBufferedImage icon = itemManager.getImage(item.getId(), item.getQuantity(), item.getQuantity() > 1);
-				Runnable addImage = () ->
-				{
-					SwingUtilities.invokeLater(() ->
-					{
-						JLabel imageLabel = new JLabel(new ImageIcon(icon));
-						imageLabel.setVerticalAlignment(SwingConstants.CENTER);
-						imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
-						slotContainer.add(imageLabel);
-						slotContainer.revalidate();
-						slotContainer.repaint();
-					});
-				};
-				icon.onChanged(addImage);
-				addImage.run();
+				records = LootRecord.consolidateLootRecordsByName(this.records);
+			}
+			else if (config.monsterDisplaySetting() == LootTrackerConfig.MonsterDisplays.ID)
+			{
+				records = LootRecord.consolidateLootRecordsById(this.records);
 			}
 
-			itemContainer.add(slotContainer);
+			for (LootRecord r : records)
+			{
+				if (config.itemGroupingSetting() == LootTrackerConfig.Groupings.CONSOLIDATED)
+				{
+					LootRecord combined = LootRecord.consildateDropEntries(r);
+					logsContainer.add(new LootRecordPanel(combined, itemManager, config));
+				}
+				else if (config.itemGroupingSetting() == LootTrackerConfig.Groupings.INDIVIDUAL)
+				{
+					logsContainer.add(new LootRecordPanel(r, itemManager, config));
+				}
+			}
 		}
-
-		logContainer.add(logTitle, BorderLayout.NORTH);
-		logContainer.add(itemContainer, BorderLayout.CENTER);
-
-		logsContainer.add(logContainer);
-
 		logsContainer.revalidate();
 		logsContainer.repaint();
 	}

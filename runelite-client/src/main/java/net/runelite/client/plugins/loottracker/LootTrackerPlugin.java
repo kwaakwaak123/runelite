@@ -35,20 +35,22 @@ import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
+import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.InventoryID;
-import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.NPC;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.WidgetID;
+import net.runelite.client.config.ConfigManager;
 import net.runelite.client.events.NpcLootReceived;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.loottracker.data.LootRecord;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.PluginToolbar;
 import net.runelite.client.util.Text;
@@ -70,6 +72,15 @@ public class LootTrackerPlugin extends Plugin
 	@Inject
 	private Client client;
 
+	@Inject
+	private LootTrackerConfig config;
+
+	@Provides
+	LootTrackerConfig provideConfig(ConfigManager configManager)
+	{
+		return configManager.getConfig(LootTrackerConfig.class);
+	}
+
 	private LootTrackerPanel panel;
 	private NavigationButton navButton;
 	private String eventType;
@@ -78,7 +89,7 @@ public class LootTrackerPlugin extends Plugin
 	protected void startUp() throws Exception
 	{
 		panel = injector.getInstance(LootTrackerPanel.class);
-		panel.init();
+		panel.init(config);
 
 		BufferedImage icon;
 		synchronized (ImageIO.class)
@@ -107,9 +118,8 @@ public class LootTrackerPlugin extends Plugin
 	{
 		NPC npc = npcLootReceived.getNpc();
 		Collection<ItemStack> items = npcLootReceived.getItems();
-		final String name = npc.getName();
-		final int combat = npc.getCombatLevel();
-		SwingUtilities.invokeLater(() -> panel.addLog(name, combat, items.toArray(new ItemStack[items.size()])));
+		LootRecord e = new LootRecord(npc.getId(), npc.getName(), npc.getCombatLevel(), -1, items);
+		SwingUtilities.invokeLater(() -> panel.addLootRecord(e));
 	}
 
 	@Subscribe
@@ -153,7 +163,8 @@ public class LootTrackerPlugin extends Plugin
 				{
 					log.debug("Item Received: {}x {}", item.getQuantity(), item.getId());
 				}
-				SwingUtilities.invokeLater(() -> panel.addLog(eventType, -1, items.toArray(new ItemStack[items.size()])));
+				LootRecord r = new LootRecord(-1, eventType, -1, -1, items);
+				SwingUtilities.invokeLater(() -> panel.addLootRecord(r));
 			}
 			else
 			{
