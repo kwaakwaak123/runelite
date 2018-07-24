@@ -61,9 +61,7 @@ public class LootTrackerPanel extends PluginPanel
 	private static final int ITEMS_PER_ROW = 5;
 
 	private static final ImageIcon RESET_ICON;
-	private static final ImageIcon SETTINGS_ICON;
 	private static final ImageIcon RESET_CLICK_ICON;
-	private static final ImageIcon SETTINGS_CLICK_ICON;
 
 	private final GridBagConstraints constraints = new GridBagConstraints();
 
@@ -81,10 +79,6 @@ public class LootTrackerPanel extends PluginPanel
 				BufferedImage resetIcon = ImageIO.read(LootTrackerPanel.class.getResourceAsStream("reset.png"));
 				RESET_ICON = new ImageIcon(resetIcon);
 				RESET_CLICK_ICON = new ImageIcon(SwingUtil.grayscaleOffset(resetIcon, -100));
-
-				BufferedImage settingsIcon = ImageIO.read(LootTrackerPanel.class.getResourceAsStream("settings.png"));
-				SETTINGS_ICON = new ImageIcon(settingsIcon);
-				SETTINGS_CLICK_ICON = new ImageIcon(SwingUtil.grayscaleOffset(settingsIcon, -100));
 			}
 		}
 		catch (IOException e)
@@ -125,25 +119,7 @@ public class LootTrackerPanel extends PluginPanel
 			}
 		});
 
-		final JLabel settings = new JLabel(SETTINGS_ICON);
-		settings.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mousePressed(MouseEvent mouseEvent)
-			{
-				settings.setIcon(SETTINGS_CLICK_ICON);
-				//TODO open display configs here
-			}
-
-			@Override
-			public void mouseReleased(MouseEvent mouseEvent)
-			{
-				settings.setIcon(SETTINGS_ICON);
-			}
-		});
-
 		actionsContainer.add(reset);
-		actionsContainer.add(settings);
 
 		headerPanel.add(pluginTitle, BorderLayout.WEST);
 		headerPanel.add(actionsContainer, BorderLayout.EAST);
