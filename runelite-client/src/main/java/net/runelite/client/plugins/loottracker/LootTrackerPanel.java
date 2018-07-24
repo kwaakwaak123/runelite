@@ -51,7 +51,9 @@ import net.runelite.client.game.ItemStack;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
+import net.runelite.client.util.StackFormatter;
 import net.runelite.client.util.SwingUtil;
+import net.runelite.http.api.item.ItemPrice;
 
 @Slf4j
 public class LootTrackerPanel extends PluginPanel
@@ -181,11 +183,21 @@ public class LootTrackerPanel extends PluginPanel
 		// For events outside of npc drops (barrows, raids, etc) the level should be -1
 		if (npcLevel > -1)
 		{
-			JLabel npcLevelLabel = new JLabel("(lvl. " + npcLevel + ")");
+			JLabel npcLevelLabel = new JLabel("(lvl-" + npcLevel + ")");
 			npcLevelLabel.setFont(FontManager.getRunescapeSmallFont());
 			npcLevelLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 
 			logTitle.add(npcLevelLabel, BorderLayout.CENTER);
+		}
+
+		long price = calculatePrice(items);
+		if (price > 0)
+		{
+			JLabel priceLabel = new JLabel(StackFormatter.quantityToStackSize(price));
+			priceLabel.setFont(FontManager.getRunescapeSmallFont());
+			priceLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+
+			logTitle.add(priceLabel, BorderLayout.EAST);
 		}
 
 		// calculates how many rows need to be display to fit all items
@@ -238,5 +250,19 @@ public class LootTrackerPanel extends PluginPanel
 		logsContainer.removeAll();
 		logsContainer.revalidate();
 		logsContainer.repaint();
+	}
+
+	private long calculatePrice(ItemStack[] itemStacks)
+	{
+		long total = 0;
+		for (ItemStack itemStack : itemStacks)
+		{
+			ItemPrice itemPrice = itemManager.getItemPrice(itemStack.getId());
+			if (itemPrice != null)
+			{
+				total += (long) itemPrice.getPrice() * itemStack.getQuantity();
+			}
+		}
+		return total;
 	}
 }
