@@ -27,8 +27,10 @@ package net.runelite.client.plugins.loottracker;
 
 import com.google.common.eventbus.Subscribe;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -109,7 +111,8 @@ public class LootTrackerPlugin extends Plugin
 		Collection<ItemStack> items = npcLootReceived.getItems();
 		final String name = npc.getName();
 		final int combat = npc.getCombatLevel();
-		SwingUtilities.invokeLater(() -> panel.addLog(name, combat, items.toArray(new ItemStack[items.size()])));
+		final Collection<ItemStack> stackedItems = stack(items);
+		SwingUtilities.invokeLater(() -> panel.addLog(name, combat, stackedItems.toArray(new ItemStack[stackedItems.size()])));
 	}
 
 	@Subscribe
@@ -141,19 +144,19 @@ public class LootTrackerPlugin extends Plugin
 
 		if (container != null)
 		{
-			// Convert container items to collection of ItemStack
-			Collection<ItemStack> items = Arrays.stream(container.getItems())
+			// Convert container items to array of ItemStack
+			ItemStack[] items = Arrays.stream(container.getItems())
 				.map(item -> new ItemStack(item.getId(), item.getQuantity()))
-				.collect(Collectors.toList());
+				.toArray(ItemStack[]::new);
 
-			if (!items.isEmpty())
+			if (items.length > 0)
 			{
 				log.debug("Loot Received from Event: {}", eventType);
 				for (ItemStack item : items)
 				{
 					log.debug("Item Received: {}x {}", item.getQuantity(), item.getId());
 				}
-				SwingUtilities.invokeLater(() -> panel.addLog(eventType, -1, items.toArray(new ItemStack[items.size()])));
+				SwingUtilities.invokeLater(() -> panel.addLog(eventType, -1, items));
 			}
 			else
 			{
@@ -196,5 +199,32 @@ public class LootTrackerPlugin extends Plugin
 					break;
 			}
 		}
+	}
+
+	private Collection<ItemStack> stack(Collection<ItemStack> items)
+	{
+		List<ItemStack> list = new ArrayList<>();
+		for (ItemStack item : items)
+		{
+			int quantity = 0;
+			for (ItemStack i : list)
+			{
+				if (i.getId() == item.getId())
+				{
+					quantity = i.getQuantity();
+					list.remove(i);
+					break;
+				}
+			}
+			if (quantity > 0)
+			{
+				items.add(new ItemStack(item.getId(), item.getQuantity() + quantity));
+			}
+			else
+			{
+				items.add(item);
+			}
+		}
+		return list;
 	}
 }
