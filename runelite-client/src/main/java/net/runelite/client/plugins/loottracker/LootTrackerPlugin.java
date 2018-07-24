@@ -218,11 +218,11 @@ public class LootTrackerPlugin extends Plugin
 			}
 			if (quantity > 0)
 			{
-				items.add(new ItemStack(item.getId(), item.getQuantity() + quantity));
+				list.add(new ItemStack(item.getId(), item.getQuantity() + quantity));
 			}
 			else
 			{
-				items.add(item);
+				list.add(item);
 			}
 		}
 		return list;
