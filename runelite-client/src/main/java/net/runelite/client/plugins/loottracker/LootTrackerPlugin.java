@@ -27,6 +27,7 @@ package net.runelite.client.plugins.loottracker;
 
 import com.google.common.eventbus.Subscribe;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.regex.Matcher;
@@ -51,6 +52,7 @@ import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.loottracker.data.LootRecord;
+import net.runelite.client.plugins.loottracker.data.LootRecordWriter;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.PluginToolbar;
 import net.runelite.client.util.Text;
@@ -74,6 +76,8 @@ public class LootTrackerPlugin extends Plugin
 
 	@Inject
 	private LootTrackerConfig config;
+
+	private LootRecordWriter writer;
 
 	@Provides
 	LootTrackerConfig provideConfig(ConfigManager configManager)
@@ -105,6 +109,8 @@ public class LootTrackerPlugin extends Plugin
 			.build();
 
 		pluginToolbar.addNavigation(navButton);
+
+		writer = new LootRecordWriter(client);
 	}
 
 	@Override
@@ -120,6 +126,7 @@ public class LootTrackerPlugin extends Plugin
 		Collection<ItemStack> items = npcLootReceived.getItems();
 		LootRecord e = new LootRecord(npc.getId(), npc.getName(), npc.getCombatLevel(), -1, items);
 		SwingUtilities.invokeLater(() -> panel.addLootRecord(e));
+		writer.addData(npc.getName(), e);
 	}
 
 	@Subscribe
@@ -165,6 +172,7 @@ public class LootTrackerPlugin extends Plugin
 				}
 				LootRecord r = new LootRecord(-1, eventType, -1, -1, items);
 				SwingUtilities.invokeLater(() -> panel.addLootRecord(r));
+				writer.addData(eventType, r);
 			}
 			else
 			{
