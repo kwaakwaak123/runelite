@@ -114,7 +114,7 @@ public class LootTrackerPanel extends PluginPanel
 			public void mousePressed(MouseEvent mouseEvent)
 			{
 				reset.setIcon(RESET_CLICK_ICON);
-				reset();
+				clearData();
 			}
 
 			@Override
@@ -176,6 +176,7 @@ public class LootTrackerPanel extends PluginPanel
 		}
 		else
 		{
+			// TODO: Find better way to append data to existing LootRecordPanels
 			reset();
 
 			Collection<LootRecord> records = new ArrayList<>();
@@ -209,11 +210,48 @@ public class LootTrackerPanel extends PluginPanel
 		logsContainer.repaint();
 	}
 
+	public void configChanged()
+	{
+		if (this.records.size() == 0)
+		{
+			return;
+		}
+
+		reset();
+
+		Collection<LootRecord> recs = this.records;
+		switch (config.monsterDisplaySetting())
+		{
+			case NAME:
+				recs = LootRecord.consolidateLootRecordsByName(this.records);
+				break;
+			case ID:
+				recs = LootRecord.consolidateLootRecordsById(this.records);
+				break;
+		}
+
+		for (LootRecord rec : recs)
+		{
+			if (config.itemGroupingSetting() == LootTrackerConfig.Groupings.CONSOLIDATED)
+			{
+				rec = LootRecord.consildateDropEntries(rec);
+			}
+			logsContainer.add(new LootRecordPanel(rec, itemManager, config), constraints);
+			constraints.gridy++;
+		}
+	}
+
 	public void reset()
 	{
 		logsContainer.removeAll();
 		logsContainer.revalidate();
 		logsContainer.repaint();
+	}
+
+	public void clearData()
+	{
+		this.records.clear();
+		reset();
 	}
 
 }

@@ -27,7 +27,6 @@ package net.runelite.client.plugins.loottracker;
 
 import com.google.common.eventbus.Subscribe;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.regex.Matcher;
@@ -44,6 +43,7 @@ import net.runelite.api.InventoryID;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.NPC;
 import net.runelite.api.events.ChatMessage;
+import net.runelite.api.events.ConfigChanged;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.WidgetID;
 import net.runelite.client.config.ConfigManager;
@@ -214,6 +214,15 @@ public class LootTrackerPlugin extends Plugin
 					eventType = "Clue Scroll (Master)";
 					break;
 			}
+		}
+	}
+
+	@Subscribe
+	protected void onConfigChanged(ConfigChanged e)
+	{
+		if (e.getGroup().equals("loottracker"))
+		{
+			panel.configChanged();
 		}
 	}
 }

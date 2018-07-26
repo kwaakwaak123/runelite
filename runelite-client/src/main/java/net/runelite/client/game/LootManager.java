@@ -7,6 +7,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
@@ -49,6 +50,8 @@ public class LootManager
 	private final Multimap<Integer, ItemStack> itemSpawns = HashMultimap.create();
 	private WorldPoint playerLocationLastTick;
 	private WorldPoint krakenPlayerLocation;
+
+	private final Map<LocalPoint, Integer> killCount = new HashMap<>();
 
 	@Inject
 	private LootManager(EventBus eventBus, Provider<Client> client)
@@ -128,6 +131,16 @@ public class LootManager
 		{
 			return;
 		}
+
+		int count = killCount.computeIfAbsent(location, v -> 0) + 1;
+		killCount.put(location, count);
+		if (count > 1)
+		{
+			// Another NPC already died on this tile, send an empty list
+			// TODO: Figure out a way to split loot instead
+			allItems.clear();
+		}
+
 		NpcLootReceived npcLootReceived = new NpcLootReceived(npc, allItems);
 		eventBus.post(npcLootReceived);
 	}
@@ -224,6 +237,7 @@ public class LootManager
 	{
 		playerLocationLastTick = client.get().getLocalPlayer().getWorldLocation();
 		itemSpawns.clear();
+		killCount.clear();
 	}
 
 	private WorldPoint getDropLocation(NPC npc, WorldPoint worldLocation)
