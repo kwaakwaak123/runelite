@@ -72,15 +72,17 @@ public class LootRecordWriter
 		}
 	}
 
-	private void updatePlayerFolder()
+	public void updatePlayerFolder()
 	{
 		if (client.getLocalPlayer() != null && client.getLocalPlayer().getName() != null)
 		{
 			playerFolder = new File(LOOT_RECORD_DIR, client.getLocalPlayer().getName());
+			fileMap.clear();
 		}
 		else
 		{
 			playerFolder = LOOT_RECORD_DIR;
+			fileMap.clear();
 		}
 
 		playerFolder.mkdir();
