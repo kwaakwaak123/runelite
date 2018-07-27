@@ -105,6 +105,12 @@ public class LootManager
 	{
 		Client client = this.client.get();
 		LocalPoint location = LocalPoint.fromWorld(client, getDropLocation(npc, npc.getWorldLocation()));
+
+		if (killMap.get(location))
+		{
+			return;
+		}
+
 		int x = location.getSceneX();
 		int y = location.getSceneY();
 		int size = npc.getComposition().getSize();
@@ -130,12 +136,6 @@ public class LootManager
 		if (allItems.isEmpty())
 		{
 			return;
-		}
-
-		if (killMap.get(location))
-		{
-			// Remove items from additional kills to allow for correct kill count tracking in plugin
-			allItems.clear();
 		}
 
 		NpcLootReceived npcLootReceived = new NpcLootReceived(npc, allItems);
