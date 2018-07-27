@@ -29,6 +29,8 @@ import com.google.common.eventbus.Subscribe;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -69,7 +71,11 @@ public class LootTrackerPlugin extends Plugin
 {
 	// Activity/Event loot handling
 	private static final Pattern CLUE_SCROLL_PATTERN = Pattern.compile("You have completed [0-9]+ ([a-z]+) Treasure Trails.");
+	private static final Pattern BOSS_NAME_NUMBER_PATTERN = Pattern.compile("Your (.*) kill count is: ([0-9]*).");
+	private static final Pattern NUMBER_PATTERN = Pattern.compile("([0-9]*)");
 
+	private static final Pattern PET_RECEIVED_PATTERN = Pattern.compile("You have a funny feeling like ");
+	private static final Pattern PET_RECEIVED_INVENTORY_PATTERN = Pattern.compile("You feel something weird sneaking into your backpack.");
 	@Inject
 	private PluginToolbar pluginToolbar;
 
@@ -90,6 +96,10 @@ public class LootTrackerPlugin extends Plugin
 	private LootTrackerPanel panel;
 	private NavigationButton navButton;
 	private String eventType;
+
+	// key = name, value=current killCount
+	private Map<String, Integer> killCountMap = new HashMap<>();
+	private boolean gotPet = false;
 
 	@Override
 	protected void startUp() throws Exception
@@ -126,7 +136,11 @@ public class LootTrackerPlugin extends Plugin
 	{
 		NPC npc = npcLootReceived.getNpc();
 		Collection<ItemStack> items = npcLootReceived.getItems();
-		LootRecord e = new LootRecord(npc.getId(), npc.getName(), npc.getCombatLevel(), -1, items);
+
+		String npcName = npc.getName();
+		int killCount = killCountMap.getOrDefault(npcName.toUpperCase(), -1);
+
+		LootRecord e = new LootRecord(npc.getId(), npcName, npc.getCombatLevel(), killCount, items);
 		SwingUtilities.invokeLater(() -> panel.addLootRecord(e));
 		writer.addData(npc.getName(), e);
 	}
@@ -134,7 +148,7 @@ public class LootTrackerPlugin extends Plugin
 	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
-		ItemContainer container = null;
+		ItemContainer container;
 		switch (event.getGroupId())
 		{
 			case (WidgetID.BARROWS_REWARD_GROUP_ID):
@@ -142,7 +156,7 @@ public class LootTrackerPlugin extends Plugin
 				container = client.getItemContainer(InventoryID.BARROWS_REWARD);
 				break;
 			case (WidgetID.CHAMBERS_OF_XERIC_REWARD_GROUP_ID):
-				eventType = "Chambers of Xeric";
+				eventType = "Raids";
 				container = client.getItemContainer(InventoryID.CHAMBERS_OF_XERIC_CHEST);
 				break;
 			case (WidgetID.THEATRE_OF_BLOOD_GROUP_ID):
@@ -172,7 +186,8 @@ public class LootTrackerPlugin extends Plugin
 				{
 					log.debug("Item Received: {}x {}", item.getQuantity(), item.getId());
 				}
-				LootRecord r = new LootRecord(-1, eventType, -1, -1, items);
+				int killCount = killCountMap.getOrDefault(eventType.toUpperCase(), -1);
+				LootRecord r = new LootRecord(-1, eventType, -1, killCount, items);
 				SwingUtilities.invokeLater(() -> panel.addLootRecord(r));
 				writer.addData(eventType, r);
 			}
@@ -197,7 +212,7 @@ public class LootTrackerPlugin extends Plugin
 		Matcher m = CLUE_SCROLL_PATTERN.matcher(Text.removeTags(chatMessage));
 		if (m.find())
 		{
-			String type = m.group(1).toLowerCase();
+			String type = m.group(2).toLowerCase();
 			switch (type)
 			{
 				case "easy":
@@ -215,7 +230,66 @@ public class LootTrackerPlugin extends Plugin
 				case "master":
 					eventType = "Clue Scroll (Master)";
 					break;
+				default:
+					log.debug("Unhandled clue scroll case: {}", type);
+					log.debug("Matched Chat Message: {}", chatMessage);
+					return;
 			}
+
+			int killCount = Integer.valueOf(m.group(1));
+			killCountMap.put(eventType.toUpperCase(), killCount);
+			return;
+		}
+
+		// TODO: Figure out better way to handle Barrows and Raids/Raids 2
+		// Barrows KC
+		if (chatMessage.startsWith("Your Barrows chest count is"))
+		{
+			Matcher n = NUMBER_PATTERN.matcher(Text.removeTags(chatMessage));
+			if (n.find())
+			{
+				killCountMap.put("BARROWS", Integer.valueOf(m.group()));
+				return;
+			}
+		}
+
+		// Raids KC
+		if (chatMessage.startsWith("Your completed Chambers of Xeric count is"))
+		{
+			Matcher n = NUMBER_PATTERN.matcher(Text.removeTags(chatMessage));
+			if (n.find())
+			{
+				killCountMap.put("RAIDS", Integer.valueOf(m.group()));
+				return;
+			}
+		}
+
+		// Raids KC
+		if (chatMessage.startsWith("Your completed Theatre of Blood count is"))
+		{
+			Matcher n = NUMBER_PATTERN.matcher(Text.removeTags(chatMessage));
+			if (n.find())
+			{
+				killCountMap.put("THEATRE OF BLOOD", Integer.valueOf(m.group()));
+				return;
+			}
+		}
+
+		// Handle all other boss
+		Matcher boss = BOSS_NAME_NUMBER_PATTERN.matcher(Text.removeTags(chatMessage));
+		if (boss.find())
+		{
+			String bossName = boss.group(1);
+			int killCount = Integer.valueOf(boss.group(2));
+			killCountMap.put(bossName.toUpperCase(), killCount);
+		}
+
+		// Did they receive a pet?
+		Matcher pet1 = PET_RECEIVED_PATTERN.matcher(Text.removeTags(chatMessage));
+		Matcher pet2 = PET_RECEIVED_INVENTORY_PATTERN.matcher(Text.removeTags(chatMessage));
+		if (pet1.find() || pet2.find())
+		{
+			gotPet = true;
 		}
 	}
 
