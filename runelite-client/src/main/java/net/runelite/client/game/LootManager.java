@@ -7,6 +7,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
@@ -49,6 +50,8 @@ public class LootManager
 	private final ListMultimap<Integer, ItemStack> itemSpawns = ArrayListMultimap.create();
 	private WorldPoint playerLocationLastTick;
 	private WorldPoint krakenPlayerLocation;
+
+	private Map<LocalPoint, Boolean> killMap = new HashMap<>();
 
 	@Inject
 	private LootManager(EventBus eventBus, Provider<Client> client)
@@ -128,8 +131,17 @@ public class LootManager
 		{
 			return;
 		}
+
+		if (killMap.get(location))
+		{
+			// Remove items from additional kills to allow for correct kill count tracking in plugin
+			allItems.clear();
+		}
+
 		NpcLootReceived npcLootReceived = new NpcLootReceived(npc, allItems);
 		eventBus.post(npcLootReceived);
+
+		killMap.put(location, true);
 	}
 
 	@Subscribe
@@ -224,6 +236,7 @@ public class LootManager
 	{
 		playerLocationLastTick = client.get().getLocalPlayer().getWorldLocation();
 		itemSpawns.clear();
+		killMap.clear();
 	}
 
 	private WorldPoint getDropLocation(NPC npc, WorldPoint worldLocation)
