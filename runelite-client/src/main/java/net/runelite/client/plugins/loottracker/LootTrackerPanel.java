@@ -48,6 +48,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemStack;
+import net.runelite.client.plugins.loottracker.data.LootRecord;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
@@ -139,9 +140,13 @@ public class LootTrackerPanel extends PluginPanel
 		add(centerPanel, BorderLayout.CENTER);
 	}
 
-	void addLog(String npcName, int npcLevel, ItemStack[] items)
+	void addLog(LootRecord record)
 	{
 		assert SwingUtilities.isEventDispatchThread();
+
+		String npcName = record.getName();
+		int npcLevel = record.getLevel();
+		ItemStack[] items = record.getDrops().toArray(new ItemStack[0]);
 
 		JPanel logContainer = new JPanel();
 		logContainer.setLayout(new BorderLayout(0, 1));

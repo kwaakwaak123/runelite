@@ -51,6 +51,7 @@ import net.runelite.client.events.NpcLootReceived;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.loottracker.data.LootRecord;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.PluginToolbar;
 import net.runelite.client.util.Text;
@@ -112,7 +113,7 @@ public class LootTrackerPlugin extends Plugin
 		final String name = npc.getName();
 		final int combat = npc.getCombatLevel();
 		final Collection<ItemStack> stackedItems = stack(items);
-		SwingUtilities.invokeLater(() -> panel.addLog(name, combat, stackedItems.toArray(new ItemStack[stackedItems.size()])));
+		SwingUtilities.invokeLater(() -> panel.addLog(new LootRecord(npc.getId(), name, combat, -1, stackedItems)));
 	}
 
 	@Subscribe
@@ -144,19 +145,19 @@ public class LootTrackerPlugin extends Plugin
 
 		if (container != null)
 		{
-			// Convert container items to array of ItemStack
-			ItemStack[] items = Arrays.stream(container.getItems())
-				.map(item -> new ItemStack(item.getId(), item.getQuantity()))
-				.toArray(ItemStack[]::new);
+			// Convert container items to collection of ItemStack
+			Collection<ItemStack> items = Arrays.stream(container.getItems())
+					.map(item -> new ItemStack(item.getId(), item.getQuantity()))
+					.collect(Collectors.toList());
 
-			if (items.length > 0)
+			if (items.size() > 0)
 			{
 				log.debug("Loot Received from Event: {}", eventType);
 				for (ItemStack item : items)
 				{
 					log.debug("Item Received: {}x {}", item.getQuantity(), item.getId());
 				}
-				SwingUtilities.invokeLater(() -> panel.addLog(eventType, -1, items));
+				SwingUtilities.invokeLater(() -> panel.addLog(new LootRecord(-1, eventType, -1, -1, items)));
 			}
 			else
 			{
