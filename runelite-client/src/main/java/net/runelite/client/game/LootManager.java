@@ -106,7 +106,7 @@ public class LootManager
 		Client client = this.client.get();
 		LocalPoint location = LocalPoint.fromWorld(client, getDropLocation(npc, npc.getWorldLocation()));
 
-		if (killMap.get(location))
+		if (killMap.get(location) != null)
 		{
 			return;
 		}

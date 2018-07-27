@@ -34,21 +34,22 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.Collection;
 import javax.imageio.ImageIO;
 import javax.inject.Inject;
 import javax.swing.Box;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.loottracker.data.LootRecord;
+import net.runelite.client.plugins.loottracker.ui.ItemGridPanel;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
@@ -59,8 +60,6 @@ import net.runelite.http.api.item.ItemPrice;
 @Slf4j
 public class LootTrackerPanel extends PluginPanel
 {
-	private static final int ITEMS_PER_ROW = 5;
-
 	private static final ImageIcon RESET_ICON;
 	private static final ImageIcon RESET_CLICK_ICON;
 
@@ -144,6 +143,7 @@ public class LootTrackerPanel extends PluginPanel
 	{
 		assert SwingUtilities.isEventDispatchThread();
 
+		// Kill Order or Consolidated?
 		String npcName = record.getName();
 		int npcLevel = record.getLevel();
 		ItemStack[] items = record.getDrops().toArray(new ItemStack[0]);
@@ -181,40 +181,17 @@ public class LootTrackerPanel extends PluginPanel
 			logTitle.add(priceLabel, BorderLayout.EAST);
 		}
 
-		// calculates how many rows need to be display to fit all items
-		int rowSize = ((items.length % ITEMS_PER_ROW == 0) ? 0 : 1) + items.length / ITEMS_PER_ROW;
-
-		JPanel itemContainer = new JPanel(new GridLayout(rowSize, ITEMS_PER_ROW, 1, 1));
-
-		for (int i = 0; i < rowSize * ITEMS_PER_ROW; i++)
+		// Change to true for testing large panels
+		if (true)
 		{
-			JPanel slotContainer = new JPanel();
-			slotContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-
-			if (i < items.length)
+			Collection<ItemStack> drops = record.getDrops();
+			for (int i = 550; i < 565; i++)
 			{
-				ItemStack item = items[i];
-
-				AsyncBufferedImage icon = itemManager.getImage(item.getId(), item.getQuantity(), item.getQuantity() > 1);
-				Runnable addImage = () ->
-				{
-					SwingUtilities.invokeLater(() ->
-					{
-						JLabel imageLabel = new JLabel(new ImageIcon(icon));
-						imageLabel.setVerticalAlignment(SwingConstants.CENTER);
-						imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
-						slotContainer.add(imageLabel);
-						slotContainer.revalidate();
-						slotContainer.repaint();
-					});
-				};
-				icon.onChanged(addImage);
-				addImage.run();
+				drops.add(new ItemStack(i, 100));
 			}
-
-			itemContainer.add(slotContainer);
+			items = drops.toArray(new ItemStack[0]);
 		}
+		ItemGridPanel itemContainer = new ItemGridPanel(items, itemManager);
 
 		logContainer.add(logTitle, BorderLayout.NORTH);
 		logContainer.add(itemContainer, BorderLayout.CENTER);
@@ -228,9 +205,20 @@ public class LootTrackerPanel extends PluginPanel
 
 	public void reset()
 	{
+		if (!confirmReset())
+		{
+			return;
+		}
+
 		logsContainer.removeAll();
 		logsContainer.revalidate();
 		logsContainer.repaint();
+	}
+
+	private boolean confirmReset()
+	{
+		int delete = JOptionPane.showConfirmDialog(this, "<html>Are you sure you want to clear all data for this panel?<br/>There is no way to undo this action.</html>", "Warning", JOptionPane.YES_NO_OPTION);
+		return delete == JOptionPane.YES_OPTION;
 	}
 
 	private long calculatePrice(ItemStack[] itemStacks)
