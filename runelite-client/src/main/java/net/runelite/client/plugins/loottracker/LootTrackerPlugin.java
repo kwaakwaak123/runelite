@@ -85,7 +85,7 @@ public class LootTrackerPlugin extends Plugin
 		BufferedImage icon;
 		synchronized (ImageIO.class)
 		{
-			icon = ImageIO.read(LootTrackerPanel.class.getResourceAsStream("reset.png"));
+			icon = ImageIO.read(LootTrackerPanel.class.getResourceAsStream("trash.png"));
 		}
 
 		navButton = NavigationButton.builder()

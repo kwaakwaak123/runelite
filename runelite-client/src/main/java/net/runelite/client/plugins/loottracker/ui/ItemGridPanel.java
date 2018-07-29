@@ -30,12 +30,16 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.loottracker.data.LootRecord;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.FontManager;
+import net.runelite.client.util.StackFormatter;
 import net.runelite.http.api.item.ItemPrice;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
+import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.util.Arrays;
 
@@ -50,6 +54,8 @@ public class ItemGridPanel extends JPanel
 	{
 		this.itemManager = itemManager;
 		this.record = record;
+
+		this.setLayout(new BorderLayout());
 
 		createItemPanel();
 	}
@@ -68,10 +74,13 @@ public class ItemGridPanel extends JPanel
 
 	private void createItemPanel()
 	{
+		double priceTotal = 0;
+
 		ItemStack[] itemList = this.record.getDrops().toArray(new ItemStack[0]);
 		int rowSize = ((itemList.length % ITEMS_PER_ROW == 0) ? 0 : 1) + itemList.length / ITEMS_PER_ROW;
 
-		this.setLayout(new GridLayout(rowSize, ITEMS_PER_ROW, 1, 1));
+		JPanel itemContainer = new JPanel();
+		itemContainer.setLayout(new GridLayout(rowSize, ITEMS_PER_ROW, 1, 1));
 
 		for (int i = 0; i < rowSize * ITEMS_PER_ROW; i++)
 		{
@@ -86,6 +95,8 @@ public class ItemGridPanel extends JPanel
 				ItemPrice p = itemManager.getItemPrice(item.getId());
 				int price = (p == null ? 0 : p.getPrice());
 				int realPrice = (item.getId() == ItemID.COINS_995 ? 1 : (price < 0 ? 0 : price));
+				double total = (double) realPrice * item.getQuantity();
+				priceTotal += total;
 
 				AsyncBufferedImage icon = itemManager.getImage(item.getId(), item.getQuantity(), item.getQuantity() > 1);
 				Runnable addImage = () ->
@@ -97,8 +108,8 @@ public class ItemGridPanel extends JPanel
 						imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
 						imageLabel.setToolTipText("<html>" + itemName + "<br/>"
-								+ "price: " + realPrice + "<br/>"
-								+ "total: " + realPrice * item.getQuantity() + "</html>");
+								+ "Price: " + StackFormatter.formatNumber(realPrice) + "<br/>"
+								+ "Total: " + StackFormatter.formatNumber(total) + "</html>");
 						slotContainer.add(imageLabel);
 						slotContainer.revalidate();
 						slotContainer.repaint();
@@ -108,7 +119,15 @@ public class ItemGridPanel extends JPanel
 				addImage.run();
 			}
 
-			this.add(slotContainer);
+			itemContainer.add(slotContainer);
 		}
+
+		JLabel priceLabel = new JLabel("Total Value: " + StackFormatter.formatNumber(priceTotal) + " gp");
+		priceLabel.setHorizontalAlignment(SwingUtilities.CENTER);
+		priceLabel.setBorder(new EmptyBorder(5, 0, 5, 0));
+		priceLabel.setFont(FontManager.getRunescapeFont());
+
+		this.add(priceLabel, BorderLayout.NORTH);
+		this.add(itemContainer, BorderLayout.CENTER);
 	}
 }
