@@ -49,7 +49,6 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
-import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.loottracker.data.LootRecord;
 import net.runelite.client.plugins.loottracker.ui.ItemGridPanel;
 import net.runelite.client.ui.ColorScheme;
@@ -63,15 +62,14 @@ public class LootTrackerPanel extends PluginPanel
 	private static final ImageIcon RESET_ICON;
 	private static final ImageIcon RESET_CLICK_ICON;
 
-	private final GridBagConstraints constraints = new GridBagConstraints();
-
 	private final JPanel logsContainer = new JPanel();
+	private final GridBagConstraints constraints = new GridBagConstraints();
 
 	private final Multimap<String, LootRecord> records = ArrayListMultimap.create();
 
 	// Used for updating specific panels in consolidatedView instead of recreating entire panel
-	private boolean consolidatedItemView = false;
 	private final Map<String, ItemGridPanel> itemPanels = new HashMap<>();
+	private LootTrackerConfig config;
 
 
 	@Inject
@@ -94,8 +92,10 @@ public class LootTrackerPanel extends PluginPanel
 		}
 	}
 
-	void init()
+	void init(LootTrackerConfig config)
 	{
+		this.config = config;
+
 		getScrollPane().setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 
 		setLayout(new BorderLayout());
@@ -150,27 +150,32 @@ public class LootTrackerPanel extends PluginPanel
 	{
 		assert SwingUtilities.isEventDispatchThread();
 
-		String npcName = record.getName();
-		ItemStack[] items = record.getDrops().toArray(new ItemStack[0]);
+		records.put(record.getName(), record);
 
-		records.put(npcName, record);
+		createPanel(record);
+	}
+
+
+	private void createPanel(LootRecord rec)
+	{
+		String npcName = rec.getName();
 
 		// Consolidated View?
-		if (consolidatedItemView)
+		if (config.killGroupSetting() == LootTrackerConfig.KillGrouping.NAME)
 		{
 			ItemGridPanel p = itemPanels.get(npcName);
 			if (p != null)
 			{
-				p.addItems(items);
+				p.addItems(rec.getDrops());
 			}
 			else
 			{
-				createLootRecordPanel(record);
+				createLootRecordPanel(rec);
 			}
 		}
 		else
 		{
-			createLootRecordPanel(record);
+			createLootRecordPanel(rec);
 		}
 	}
 
@@ -178,7 +183,6 @@ public class LootTrackerPanel extends PluginPanel
 	{
 		String npcName = record.getName();
 		int npcLevel = record.getLevel();
-		ItemStack[] items = record.getDrops().toArray(new ItemStack[0]);
 
 		JPanel logContainer = new JPanel();
 		logContainer.setLayout(new BorderLayout(0, 1));
@@ -205,14 +209,13 @@ public class LootTrackerPanel extends PluginPanel
 
 
 		final JLabel reset = new JLabel(RESET_ICON);
-		int panelId = logsContainer.getComponentCount();
 		reset.addMouseListener(new MouseAdapter()
 		{
 			@Override
 			public void mousePressed(MouseEvent mouseEvent)
 			{
 				reset.setIcon(RESET_CLICK_ICON);
-				if (consolidatedItemView)
+				if (config.killGroupSetting() == LootTrackerConfig.KillGrouping.NAME)
 				{
 					// Remove all entries for this NPC Name
 					resetByNpcName(logContainer, npcName);
@@ -241,7 +244,7 @@ public class LootTrackerPanel extends PluginPanel
 		logsContainer.add(logContainer, constraints);
 		constraints.gridy++;
 
-		if (consolidatedItemView)
+		if (config.killGroupSetting() == LootTrackerConfig.KillGrouping.NAME)
 		{
 			itemPanels.put(npcName, itemContainer);
 		}
@@ -308,4 +311,30 @@ public class LootTrackerPanel extends PluginPanel
 		int delete = JOptionPane.showConfirmDialog(this, "<html>Are you sure you want to clear all data for this panel?<br/>There is no way to undo this action.</html>", "Warning", JOptionPane.YES_NO_OPTION);
 		return delete == JOptionPane.YES_OPTION;
 	}
+
+
+	public void configChanged()
+	{
+		if (this.records.size() == 0)
+		{
+			return;
+		}
+
+		logsContainer.removeAll();
+		logsContainer.revalidate();
+		logsContainer.repaint();
+
+		itemPanels.clear();
+
+		// Recreate panel with old records in new format
+		log.info("Recs: {}", this.records);
+		for (LootRecord rec : this.records.values())
+		{
+			createPanel(rec);
+		}
+
+		logsContainer.revalidate();
+		logsContainer.repaint();
+	}
+
 }

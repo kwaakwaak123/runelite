@@ -105,27 +105,26 @@ public class LootRecord
 	}
 
 	/**
-	 * Consolidate all `drops` by item id and returns an updated LootRecord
-	 * @param r LootRecord to consolidate drops for
-	 * @return LootRecord with Consolidated drops
+	 * Consolidate all item stacks by item id and returns the updated collection
+	 * @param items Collection of ItemStack to consolidate
+	 * @return Updated collection of ItemStack
 	 */
-	public static LootRecord consildateDropEntries(LootRecord r)
+	public static Collection<ItemStack> consolidateItemStacks(Collection<ItemStack> items)
 	{
-		LootRecord result = new LootRecord(r.getId(), r.getName(), r.getLevel(), r.getKillCount(), null);
-
 		Map<Integer, Integer> trueItems = new HashMap<>();
-		for (ItemStack i : r.getDrops())
+		for (ItemStack i : items)
 		{
 			int count = trueItems.computeIfAbsent(i.getId(), v -> 0);
 			trueItems.put(i.getId(), count + i.getQuantity());
 		}
 
+		Collection<ItemStack> newItems = new ArrayList<>();
 		for (Map.Entry<Integer, Integer> e : trueItems.entrySet())
 		{
-			result.addDropEntry(new ItemStack(e.getKey(), e.getValue()));
+			newItems.add(new ItemStack(e.getKey(), e.getValue()));
 		}
 
-		return result;
+		return newItems;
 	}
 
 	@Override

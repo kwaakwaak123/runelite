@@ -41,31 +41,34 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collection;
 
 public class ItemGridPanel extends JPanel
 {
 	private static final int ITEMS_PER_ROW = 5;
 
 	private final ItemManager itemManager;
-	private LootRecord record;
+	private Collection<ItemStack> items;
 
 	public ItemGridPanel(LootRecord record, ItemManager itemManager)
 	{
 		this.itemManager = itemManager;
-		this.record = record;
+		this.items = new ArrayList<>(record.getDrops());
 
 		this.setLayout(new BorderLayout());
 
 		createItemPanel();
 	}
 
-	public void addItems(ItemStack[] newItems)
+	public void addItems(Collection<ItemStack> newItems)
 	{
-		this.record.getDrops().addAll(Arrays.asList(newItems));
-		this.record = LootRecord.consildateDropEntries(this.record);
+		items.addAll(newItems);
+
+		items = LootRecord.consolidateItemStacks(items);
 
 		this.removeAll();
+
 		createItemPanel();
 
 		this.repaint();
@@ -76,7 +79,7 @@ public class ItemGridPanel extends JPanel
 	{
 		double priceTotal = 0;
 
-		ItemStack[] itemList = this.record.getDrops().toArray(new ItemStack[0]);
+		ItemStack[] itemList = items.toArray(new ItemStack[0]);
 		int rowSize = ((itemList.length % ITEMS_PER_ROW == 0) ? 0 : 1) + itemList.length / ITEMS_PER_ROW;
 
 		JPanel itemContainer = new JPanel();
