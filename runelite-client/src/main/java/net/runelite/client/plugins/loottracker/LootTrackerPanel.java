@@ -35,6 +35,8 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import javax.imageio.ImageIO;
 import javax.inject.Inject;
 import javax.swing.Box;
@@ -45,6 +47,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemStack;
@@ -66,6 +70,9 @@ public class LootTrackerPanel extends PluginPanel
 	private final GridBagConstraints constraints = new GridBagConstraints();
 
 	private final JPanel logsContainer = new JPanel();
+
+	private final Multimap<String, LootRecord> records = ArrayListMultimap.create();
+	private final Map<String, ItemGridPanel> itemPanels = new HashMap<>();
 
 	@Inject
 	private ItemManager itemManager;
@@ -143,7 +150,32 @@ public class LootTrackerPanel extends PluginPanel
 	{
 		assert SwingUtilities.isEventDispatchThread();
 
-		// Kill Order or Consolidated?
+		String npcName = record.getName();
+		ItemStack[] items = record.getDrops().toArray(new ItemStack[0]);
+
+		records.put(npcName, record);
+
+		// Consolidated View?
+		if (true)
+		{
+			ItemGridPanel p = itemPanels.get(npcName);
+			if (p != null)
+			{
+				p.addItems(items);
+			}
+			else
+			{
+				createLootRecordPanel(record);
+			}
+		}
+		else
+		{
+			createLootRecordPanel(record);
+		}
+	}
+
+	private void createLootRecordPanel(LootRecord record)
+	{
 		String npcName = record.getName();
 		int npcLevel = record.getLevel();
 		ItemStack[] items = record.getDrops().toArray(new ItemStack[0]);
@@ -182,16 +214,16 @@ public class LootTrackerPanel extends PluginPanel
 		}
 
 		// Change to true for testing large panels
-		if (true)
+		if (false)
 		{
 			Collection<ItemStack> drops = record.getDrops();
-			for (int i = 550; i < 565; i++)
+			for (int i = 554; i < 570; i++)
 			{
 				drops.add(new ItemStack(i, 100));
 			}
 			items = drops.toArray(new ItemStack[0]);
 		}
-		ItemGridPanel itemContainer = new ItemGridPanel(items, itemManager);
+		ItemGridPanel itemContainer = new ItemGridPanel(record, itemManager);
 
 		logContainer.add(logTitle, BorderLayout.NORTH);
 		logContainer.add(itemContainer, BorderLayout.CENTER);
@@ -201,6 +233,8 @@ public class LootTrackerPanel extends PluginPanel
 
 		logsContainer.add(Box.createRigidArea(new Dimension(0, 10)), constraints);
 		constraints.gridy++;
+
+		itemPanels.put(npcName, itemContainer);
 	}
 
 	public void reset()
@@ -209,6 +243,9 @@ public class LootTrackerPanel extends PluginPanel
 		{
 			return;
 		}
+
+		records.clear();
+		itemPanels.clear();
 
 		logsContainer.removeAll();
 		logsContainer.revalidate();

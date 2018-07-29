@@ -268,6 +268,7 @@ public class RuneLite
 		if (!isOutdated)
 		{
 			eventBus.register(itemManager.get());
+			eventBus.register(lootManager);
 			WidgetOverlay.createOverlays(client).forEach(overlayManager::add);
 		}
 

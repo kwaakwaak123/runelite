@@ -28,6 +28,7 @@ import net.runelite.api.ItemID;
 import net.runelite.client.game.AsyncBufferedImage;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemStack;
+import net.runelite.client.plugins.loottracker.data.LootRecord;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.http.api.item.ItemPrice;
 import javax.swing.ImageIcon;
@@ -36,14 +37,39 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import java.awt.GridLayout;
+import java.util.Arrays;
 
 public class ItemGridPanel extends JPanel
 {
 	private static final int ITEMS_PER_ROW = 5;
 
-	public ItemGridPanel(ItemStack[] items, ItemManager itemManager)
+	private final ItemManager itemManager;
+	private LootRecord record;
+
+	public ItemGridPanel(LootRecord record, ItemManager itemManager)
 	{
-		int rowSize = ((items.length % ITEMS_PER_ROW == 0) ? 0 : 1) + items.length / ITEMS_PER_ROW;
+		this.itemManager = itemManager;
+		this.record = record;
+
+		createItemPanel();
+	}
+
+	public void addItems(ItemStack[] newItems)
+	{
+		this.record.getDrops().addAll(Arrays.asList(newItems));
+		this.record = LootRecord.consildateDropEntries(this.record);
+
+		this.removeAll();
+		createItemPanel();
+
+		this.repaint();
+		this.revalidate();
+	}
+
+	private void createItemPanel()
+	{
+		ItemStack[] itemList = this.record.getDrops().toArray(new ItemStack[0]);
+		int rowSize = ((itemList.length % ITEMS_PER_ROW == 0) ? 0 : 1) + itemList.length / ITEMS_PER_ROW;
 
 		this.setLayout(new GridLayout(rowSize, ITEMS_PER_ROW, 1, 1));
 
@@ -52,9 +78,9 @@ public class ItemGridPanel extends JPanel
 			JPanel slotContainer = new JPanel();
 			slotContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
-			if (i < items.length)
+			if (i < itemList.length)
 			{
-				ItemStack item = items[i];
+				ItemStack item = itemList[i];
 
 				String itemName = itemManager.getItemComposition(item.getId()).getName();
 				ItemPrice p = itemManager.getItemPrice(item.getId());
