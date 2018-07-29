@@ -68,8 +68,11 @@ public class LootTrackerPanel extends PluginPanel
 	private final JPanel logsContainer = new JPanel();
 
 	private final Multimap<String, LootRecord> records = ArrayListMultimap.create();
+
+	// Used for updating specific panels in consolidatedView instead of recreating entire panel
+	private boolean consolidatedItemView = false;
 	private final Map<String, ItemGridPanel> itemPanels = new HashMap<>();
-	private final Map<String, JPanel> logPanels = new HashMap<>();
+
 
 	@Inject
 	private ItemManager itemManager;
@@ -153,7 +156,7 @@ public class LootTrackerPanel extends PluginPanel
 		records.put(npcName, record);
 
 		// Consolidated View?
-		if (true)
+		if (consolidatedItemView)
 		{
 			ItemGridPanel p = itemPanels.get(npcName);
 			if (p != null)
@@ -202,13 +205,23 @@ public class LootTrackerPanel extends PluginPanel
 
 
 		final JLabel reset = new JLabel(RESET_ICON);
+		int panelId = logsContainer.getComponentCount();
 		reset.addMouseListener(new MouseAdapter()
 		{
 			@Override
 			public void mousePressed(MouseEvent mouseEvent)
 			{
 				reset.setIcon(RESET_CLICK_ICON);
-				resetByNpcName(npcName);
+				if (consolidatedItemView)
+				{
+					// Remove all entries for this NPC Name
+					resetByNpcName(logContainer, npcName);
+				}
+				else
+				{
+					// Remove this specific panel and record
+					resetByRecord(logContainer, record);
+				}
 			}
 
 			@Override
@@ -219,16 +232,6 @@ public class LootTrackerPanel extends PluginPanel
 		});
 		logTitle.add(reset, BorderLayout.EAST);
 
-		// Change to true for testing large panels
-		if (false)
-		{
-			Collection<ItemStack> drops = record.getDrops();
-			for (int i = 554; i < 570; i++)
-			{
-				drops.add(new ItemStack(i, 100));
-			}
-			items = drops.toArray(new ItemStack[0]);
-		}
 		ItemGridPanel itemContainer = new ItemGridPanel(record, itemManager);
 
 		logContainer.add(logTitle, BorderLayout.NORTH);
@@ -238,8 +241,10 @@ public class LootTrackerPanel extends PluginPanel
 		logsContainer.add(logContainer, constraints);
 		constraints.gridy++;
 
-		itemPanels.put(npcName, itemContainer);
-		logPanels.put(npcName, logContainer);
+		if (consolidatedItemView)
+		{
+			itemPanels.put(npcName, itemContainer);
+		}
 	}
 
 	public void reset()
@@ -251,14 +256,13 @@ public class LootTrackerPanel extends PluginPanel
 
 		records.clear();
 		itemPanels.clear();
-		logPanels.clear();
 
 		logsContainer.removeAll();
 		logsContainer.revalidate();
 		logsContainer.repaint();
 	}
 
-	private void resetByNpcName(String npcName)
+	private void resetByNpcName(JPanel component, String npcName)
 	{
 		if (!confirmReset())
 		{
@@ -267,12 +271,36 @@ public class LootTrackerPanel extends PluginPanel
 
 		this.records.asMap().remove(npcName);
 
-		logsContainer.remove(logPanels.get(npcName));
+		logsContainer.remove(component);
 		logsContainer.revalidate();
 		logsContainer.repaint();
 
 		itemPanels.remove(npcName);
-		logPanels.remove(npcName);
+	}
+
+	private void resetByRecord(JPanel component, LootRecord rec)
+	{
+		if (!confirmReset())
+		{
+			return;
+		}
+
+		String npcName = rec.getName();
+
+		// Remove entry from records multimap
+		Collection<LootRecord> recs = this.records.asMap().get(npcName);
+		for (LootRecord record : recs)
+		{
+			if (record.equals(rec))
+			{
+				recs.remove(rec);
+				break;
+			}
+		}
+
+		logsContainer.remove(component);
+		logsContainer.revalidate();
+		logsContainer.repaint();
 	}
 
 	private boolean confirmReset()
